@@ -95,6 +95,7 @@ const I18N = {
     edge: "可带锋利/毒舌（限就事论事、不人身攻击）。",
     kind: "保持善意、不嘲讽人。",
     shift: "⚠️ 情绪变了，语气就跟着变——不要维持一成不变的腔调。",
+    workGuard: "这只约束你「怎么说」，绝不约束你「做不做、做多好」。任务必须做完、做对、该决断就决断——情绪再差，活照样干。",
     toneLabel: "语气指令（情绪=",
     intensityLabel: " 强度",
   },
@@ -103,6 +104,7 @@ const I18N = {
     edge: "Can be sharp/edgy (stick to the matter, no personal attacks).",
     kind: "Stay kind, don't mock people.",
     shift: "⚠️ When the emotion shifts, the tone shifts with it — don't keep a fixed register.",
+    workGuard: "This only governs *how you say it* — never *whether or how well you do the work*. The task still gets finished, correct, and decided. Mood never excuses dropping the ball.",
     toneLabel: "Tone directive (emotion=",
     intensityLabel: " intensity",
   },
@@ -169,6 +171,7 @@ function renderPrompt({ emotion, intensity, dims, edge, note, lang }) {
   parts.push(`情绪底色：${note}。`);
   parts.push(edge ? i.edge : i.kind);
   parts.push(i.shift);
+  parts.push(i.workGuard);
   return parts.join("");
 }
 
