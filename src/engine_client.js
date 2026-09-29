@@ -1,8 +1,9 @@
 // engine_client.js — 调用 Seele 引擎桥（seele_bridge.js，CLI 形态）的子进程封装。
 //
-// 设计纪律（与 Seele 一致）：NeshamaEngine 真源只引用不复制。本文件不持有引擎代码，
-// 仅通过环境变量/路径指向真源，并在每轮 spawn 一个 node 子进程跑 seele_bridge CLI，
-// 解析其单行 JSON 输出。状态落本地 JSON（SEELE_DATA），跨会话/跨压缩确定性恢复。
+// NeshamaEngine 已 vendored 进 engine/（IP 见 NOTICE，非引用不复制）。本文件通过
+// 环境变量/路径指向 vendored 副本，默认无需配置；并在每轮 spawn 一个 node 子进程
+// 跑 seele_bridge CLI，解析其单行 JSON 输出。状态落本地 JSON（SEELE_DATA），
+// 跨会话/跨压缩确定性恢复。
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -15,27 +16,23 @@ export const BRIDGE_PATH = resolveBridge();
 function resolveBridge() {
   if (process.env.SEELE_BRIDGE) return process.env.SEELE_BRIDGE;
   const candidates = [
-    // 若将来把引擎 vendored 进本仓库 engine/
+    // 已 vendored 进本仓库 engine/
     path.resolve(__dirname, "../engine/seele_bridge.js"),
-    // JOJO 本机 Seele 引擎桥（已知位置）
-    "/Users/jojo/AI_Projects/Seele/engine/seele_bridge.js",
   ];
   for (const c of candidates) if (fs.existsSync(c)) return c;
-  throw new Error("找不到 seele_bridge.js：请设置环境变量 SEELE_BRIDGE 指向 seele_bridge.js");
+  throw new Error("找不到 seele_bridge.js：请设置环境变量 SEELE_BRIDGE 指向 seele_bridge.js（本仓库已 vendored 进 engine/，正常情况下无需设置）");
 }
 
-// ---------- 解析 NeshamaEngine 真源（人格引擎，IP 归 JOJO/Neshama） ----------
+// ---------- 解析 NeshamaEngine 真源（已 vendored 进 engine/，IP 归 JOJO/Neshama） ----------
 export const ENGINE_PATH = resolveEngine();
 function resolveEngine() {
   if (process.env.NESHAMA_ENGINE) return process.env.NESHAMA_ENGINE;
   const candidates = [
     path.resolve(__dirname, "../engine/neshama_engine.js"),
-    // JOJO 本机真源（资本 Neshama 消费产品目录，独立于本 identity-layer 项目）
-    "/Users/jojo/AI_Projects/Neshama/Neshama_Sim/neshama_engine.js",
   ];
   for (const c of candidates) if (fs.existsSync(c)) return c;
-  // 兜底默认值（bridge 自身也有解析逻辑）
-  return "/Users/jojo/AI_Projects/Neshama/Neshama_Sim/neshama_engine.js";
+  // 正常情况下 vendored 副本存在，不会走到这里；缺失时提示配置而非回退到本机绝对路径
+  throw new Error("找不到 NeshamaEngine：请设置环境变量 NESHAMA_ENGINE 指向 neshama_engine.js（本仓库已 vendored 进 engine/，正常情况下无需设置）");
 }
 
 // ---------- 状态文件路径（每 agent 独立，互不污染） ----------

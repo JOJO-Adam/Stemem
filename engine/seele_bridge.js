@@ -1,0 +1,314 @@
+#!/usr/bin/env node
+/**
+ * Seele 引擎桥（P1-4）
+ *
+ * 串起 P1 人格引擎（NeshamaEngine 真源） + P2 驱动引擎（SeeleDriveSystem），
+ * 把"记忆事件 → 人格演化 → 驱力紧迫 → 主动行为"收敛到一份持久状态
+ * `data/seele_state.json`，作为 Node 子进程被 backend/seele.py 调用。
+ *
+ * 每个子命令往 stdout 输出**一行 JSON**，Python 侧解析即可。
+ *
+ * 路径解析顺序：
+ *             1. 环境变量 NESHAMA_ENGINE（Stemem 调用时由 engine_client 注入 vendored 副本）
+ *             2. 相对本文件的 ../../Neshama/Neshama_Sim/neshama_engine.js（同机 Neshama 项目）
+ *             （已 vendored 进 Stemem/engine/，正常情况下由环境变量注入，无需兜底）
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+// ---------- 解析真源引擎路径 ----------
+function resolveEnginePath() {
+  if (process.env.NESHAMA_ENGINE) return process.env.NESHAMA_ENGINE;
+  const candidates = [
+    path.resolve(__dirname, '../../Neshama/Neshama_Sim/neshama_engine.js'),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  throw new Error(
+    '找不到 NeshamaEngine 真源。请设置环境变量 NESHAMA_ENGINE 指向 neshama_engine.js（本仓库已 vendored 进 engine/）'
+  );
+}
+
+const { NeshamaEngine, COMPLEX_EMOTIONS } = require(resolveEnginePath());
+const { SeeleDriveSystem, DRIVES, DRIVE_LABELS } = require('./seele_drive.js');
+
+// ---------- 状态文件路径 ----------
+const STATE_PATH = process.env.SEELE_DATA
+  ? path.resolve(process.env.SEELE_DATA)
+  : path.resolve(__dirname, '../data/seele_state.json');
+
+// ---------- 状态读写 ----------
+function loadState() {
+  if (!fs.existsSync(STATE_PATH)) return null;
+  const d = JSON.parse(fs.readFileSync(STATE_PATH, 'utf8'));
+  const engine = NeshamaEngine.deserialize(d.engine || '{}');
+  const drive = SeeleDriveSystem.deserialize(d.drive || '{}');
+  return { engine, drive };
+}
+
+function saveState(engine, drive) {
+  const out = {
+    version: 1,
+    updated_at: new Date().toISOString(),
+    engine: JSON.parse(engine.serialize()),
+    drive: JSON.parse(drive.serialize()),
+  };
+  fs.mkdirSync(path.dirname(STATE_PATH), { recursive: true });
+  fs.writeFileSync(STATE_PATH, JSON.stringify(out, null, 2), 'utf8');
+}
+
+function freshState(ocean = null) {
+  const engine = new NeshamaEngine(ocean || null);
+  const drive = new SeeleDriveSystem(engine.ocean);
+  return { engine, drive };
+}
+
+// P1 的 OCEAN 演化后，把最新人格推给驱动层（人格调制驱力必须用最新值）。
+// 情绪表面由 snapshot() 内 computeMoodSurface 统一计算并注入 DriveBus（D-G8 单一真源）。
+function syncDriveOcean(drive, engine) {
+  drive.setOcean(engine.ocean);
+}
+
+// ---------- Seele 侧情绪表面层（D-G8 情绪驱力） ----------
+// Neshama 真源只算「复合情绪触发」：阈值 0.45–0.6 + 每次事件向基线衰减 0.15 →
+// Seele 的稀疏交互（聊天/事件稀疏、tick 不碰情绪）几乎永远冲不过 → active_emotions 恒空
+// → getEmotion() 恒 null → 19 复合情绪在 Seele 休眠。伴侣语境要"情绪有反应"，故 Seele
+// 自校准（不碰 Neshama 真源）：用 engine.emotions（6 基础 + 4 代理）跑 COMPLEX_EMOTIONS
+// 加权强度，阈值降到 SEELE_EMOTION_THRESHOLD，让情绪在少量交互下就冒头；无复合跨阈值时
+// 回退主导基础情绪作 mood —— 保证 06 视觉 / 05 物语 / 自主行为恒有情绪信号。
+const SEELE_EMOTION_THRESHOLD = 0.42;
+
+function computeMoodSurface(engine) {
+  const state = engine.emotions || {};
+  const surfaced = [];
+  for (const [name, def] of Object.entries(COMPLEX_EMOTIONS)) {
+    let sum = 0, tw = 0;
+    for (const [emo, w] of Object.entries(def.components)) {
+      const v = state[emo] || 0;
+      sum += v * w; tw += w;
+    }
+    const intensity = tw > 0 ? sum / tw : 0;
+    if (intensity >= SEELE_EMOTION_THRESHOLD) {
+      surfaced.push({
+        name,
+        intensity: Math.round(intensity * 1000) / 1000,
+        behavior: def.behavior || null,
+        description: def.description || null,
+      });
+    }
+  }
+  surfaced.sort((a, b) => b.intensity - a.intensity);
+  // 兜底：无复合情绪跨阈值 → 取主导基础情绪（joy/anger/.../trust）作 mood
+  if (surfaced.length === 0) {
+    const entries = Object.entries(state);
+    if (entries.length) {
+      entries.sort((a, b) => b[1] - a[1]);
+      const [baseName, baseVal] = entries[0];
+      surfaced.push({
+        name: baseName,
+        intensity: Math.round(baseVal * 1000) / 1000,
+        behavior: null,
+        description: null,
+        base: true,
+      });
+    }
+  }
+  return surfaced;
+}
+
+// ---------- 快照（对外 JSON） ----------
+// 全部经由 DriveBus 稳定 API 取数（getDominant / getProfile / getSatisfaction / getEmotion
+// / getRanking / shouldAct），不再依赖 behaviorHint 并行表示（D-G8：单一真源）。
+function snapshot(engine, drive) {
+  const dom = drive.getDominant();
+  const domUtil = Math.round(drive.drives[dom].utility * 1000) / 1000;
+  const sa = drive.shouldAct(0.5);
+  const ranking = drive.getRanking().map((d) => ({
+    drive: d,
+    label: DRIVE_LABELS[d],
+    utility: Math.round(drive.drives[d].utility * 1000) / 1000,
+    satisfaction: Math.round(drive.getSatisfaction(d) * 1000) / 1000,
+  }));
+  const profile = drive.getProfile();
+  // 情绪表面（Seele 校准）：注入 DriveBus，使 getEmotion()/getEmotions() 为单一真源
+  const emotionSurface = computeMoodSurface(engine);
+  drive.setEmotions(emotionSurface);
+  const emotion = drive.getEmotion();
+  const emotions = drive.getEmotions();
+  return {
+    ocean: engine.ocean,
+    top_emotion: emotion,
+    active_emotions: emotionSurface.map((e) => ({
+      name: e.name,
+      intensity: e.intensity,
+      behavior: e.behavior || null,
+      base: !!e.base,
+    })),
+    personality: engine.getPersonalitySummary(),
+    drive: {
+      dominant: dom,
+      label: DRIVE_LABELS[dom],
+      utility: domUtil,
+      act: sa.act,
+      action: sa.action,
+      ranking,
+      profile,
+      emotion,
+      emotions,
+    },
+    ocean_history_len: engine.ocean_history.length,
+  };
+}
+
+function out(obj) {
+  process.stdout.write(JSON.stringify(obj) + '\n');
+}
+
+// ---------- 极简 CLI ----------
+function parseArgs(argv) {
+  const cmd = argv[2];
+  const opts = {};
+  for (let i = 3; i < argv.length; i++) {
+    const a = argv[i];
+    if (a && a.startsWith('--')) {
+      const key = a.slice(2);
+      const val = argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[++i] : true;
+      opts[key] = val;
+    }
+  }
+  return { cmd, opts };
+}
+
+function main() {
+  const { cmd, opts } = parseArgs(process.argv);
+
+  try {
+    if (cmd === 'init') {
+      const ocean = opts.ocean ? JSON.parse(opts.ocean) : null;
+      const { engine, drive } = freshState(ocean);
+      saveState(engine, drive);
+      out({ ok: true, action: 'init', ...snapshot(engine, drive) });
+      return;
+    }
+
+    if (cmd === 'event') {
+      let st = loadState();
+      if (!st) st = freshState();
+      const { engine, drive } = st;
+      const text = opts.text || '(无名事件)';
+      const tags = (opts.tags || '').split(',').map((s) => s.trim()).filter(Boolean);
+      const drive_deltas = opts.drive_deltas ? JSON.parse(opts.drive_deltas) : {};
+      engine.triggerEvent({ text, emotion_tags: tags, drive_deltas });
+      syncDriveOcean(drive, engine);
+      saveState(engine, drive);
+      out({ ok: true, action: 'event', text, tags, ...snapshot(engine, drive) });
+      return;
+    }
+
+    if (cmd === 'tick') {
+      let st = loadState();
+      if (!st) st = freshState();
+      const { engine, drive } = st;
+      const seconds = parseFloat(opts.seconds || '3600');
+      drive.tick(seconds);
+      saveState(engine, drive);
+      out({ ok: true, action: 'tick', seconds, ...snapshot(engine, drive) });
+      return;
+    }
+
+    if (cmd === 'satisfy') {
+      const st = loadState();
+      if (!st) {
+        out({ ok: false, error: '状态不存在，先 init' });
+        return;
+      }
+      const { engine, drive } = st;
+      const driveName = opts.drive;
+      const amount = parseFloat(opts.amount || '0.3');
+      if (!DRIVES.includes(driveName)) {
+        out({ ok: false, error: `未知驱力 ${driveName}`, valid: DRIVES });
+        return;
+      }
+      drive.satisfy(driveName, amount);
+      saveState(engine, drive);
+      out({ ok: true, action: 'satisfy', drive: driveName, amount, ...snapshot(engine, drive) });
+      return;
+    }
+
+    if (cmd === 'autostep') {
+      // 自主权：时间流逝，希灵按驱力自己决定并做想做的事（玩家不干预也活）
+      let st = loadState();
+      if (!st) st = freshState();
+      const { engine, drive } = st;
+      const seconds = parseFloat(opts.seconds || '3600');
+      drive.tick(seconds);
+      const want = drive.shouldAct(0.5);
+      let acted = false;
+      if (want.act) {
+        // 他自己做了想做的事 → 自我满足主导驱力，情绪满足/喜悦
+        drive.satisfy(want.drive, 0.3);
+        engine.triggerEvent({ text: '希灵自己做了想做的事：' + want.action, emotion_tags: 'joy|satisfaction' });
+        syncDriveOcean(drive, engine);
+        acted = true;
+      }
+      saveState(engine, drive);
+      out({ ok: true, action: 'autostep', seconds, autonomous: { drive: want.drive, action: want.action, acted }, ...snapshot(engine, drive) });
+      return;
+    }
+
+    if (cmd === 'intervene') {
+      // 玩家干预：顺驱力(帮他做想做的) 或 逆驱力(对抗他的意愿去塑造他)
+      const st = loadState();
+      if (!st) { out({ ok: false, error: '状态不存在，先 init' }); return; }
+      const { engine, drive } = st;
+      const T = opts.drive;
+      const amount = parseFloat(opts.amount || '0.4');
+      const text = opts.text || '(玩家干预)';
+      if (!DRIVES.includes(T)) { out({ ok: false, error: `未知驱力 ${T}`, valid: DRIVES }); return; }
+      const want = drive.shouldAct(0.5);
+      const mode = (T === want.drive) ? 'facilitate' : 'counteract';
+      drive.satisfy(T, amount); // 玩家的动作落在 T 上（逆驱力时=强加 T，塑造他）
+      if (mode === 'facilitate') {
+        engine.triggerEvent({ text: text + '（顺应了他的意愿）', emotion_tags: 'trust|joy' });
+      } else {
+        // 他想做 want.action，你却让他做别的 → 抵触/渴望（但你在塑造他成为 T 导向）
+        engine.triggerEvent({ text: text + '（他想' + want.action + '，你却让他做别的）', emotion_tags: 'longing|confusion' });
+      }
+      syncDriveOcean(drive, engine);
+      saveState(engine, drive);
+      out({ ok: true, action: 'intervene', mode, want: { drive: want.drive, action: want.action, act: want.act }, acted_drive: T, ...snapshot(engine, drive) });
+      return;
+    }
+
+    if (cmd === 'status') {
+      const st = loadState();
+      if (!st) {
+        out({ ok: false, error: '状态不存在，先 init' });
+        return;
+      }
+      const { engine, drive } = st;
+      out({ ok: true, action: 'status', ...snapshot(engine, drive) });
+      return;
+    }
+
+    // 默认：用法
+    out({
+      ok: false,
+      error: 'unknown command',
+      usage: [
+        'init [--ocean JSON]',
+        'event --text "..." [--tags betrayal,conflict] [--drive_deltas JSON]',
+        'tick [--seconds 3600]',
+        'satisfy --drive belonging --amount 0.3',
+        'status',
+      ],
+    });
+  } catch (e) {
+    out({ ok: false, error: String(e && e.message ? e.message : e) });
+    process.exitCode = 1;
+  }
+}
+
+main();

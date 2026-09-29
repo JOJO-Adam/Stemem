@@ -8,7 +8,7 @@ import path from "node:path";
 const __filename = new URL(import.meta.url).pathname;
 const serverPath = path.resolve(path.dirname(__filename), "../src/server.js");
 const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "stemem-smoke-"));
-const ENGINE = process.env.NESHAMA_ENGINE || "/Users/jojo/AI_Projects/Neshama/Neshama_Sim/neshama_engine.js";
+const ENGINE = process.env.NESHAMA_ENGINE || path.resolve(path.dirname(__filename), "../engine/neshama_engine.js");
 
 let passed = 0;
 let failed = 0;

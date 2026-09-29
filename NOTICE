@@ -6,28 +6,26 @@ Stemem —— 知识产权（IP）归属声明
 
 1. 人格计算引擎 NeshamaEngine（neshama_engine.js）
    -------------------------------------------------
-   - 来源：资本「Neshama」消费产品项目（neshama.cn），位于
-     /Users/jojo/AI_Projects/Neshama/Neshama_Sim/neshama_engine.js
-   - IP 归属：JOJO / Neshama
-   - 在本仓库中的状态：**仅引用，不复制**。本仓库 engine_client.js 通过
-     环境变量（NESHAMA_ENGINE）与候选路径指向该真源，不持有引擎代码本身。
-   - 该引擎的许可证由其原项目决定，不受本仓库 MIT 许可证覆盖。
+   - 来源：资本「Neshama」消费产品项目（neshama.cn）。
+   - IP 归属：JOJO / Neshama。
+   - 在本仓库中的状态：**已 vendored 进 `engine/`**（自 `Neshama/Neshama_Sim/neshama_engine.js` 复制）。
+   - 许可证：由其原项目决定，不受本仓库 MIT 许可证覆盖。
 
 2. 运行时产品（Stemem）
    --------------------
    - 范围：本仓库全部 src/ 模块（server.js / engine_client.js /
-     runtime_contract.js / soulspec.js）、设计文档（设计要点.md /
-     PROJECT_CONTEXT.md）、测试（test/）、MCP 封装与文档。
+     runtime_contract.js / soulspec.js）、设计文档、测试（test/）、
+     MCP 封装与文档、以及 `engine/package.json`（CommonJS 声明）。
    - IP 归属：JOJO&Adam 集团。
    - 许可证：MIT（见 LICENSE）。
 
-3. Seele 引擎桥（seele_bridge.js）
-   ---------------------------------
-   - 来源：JOJO 的 Seele 项目，位于
-     /Users/jojo/AI_Projects/Seele/engine/seele_bridge.js
-   - IP 归属：JOJO / Seele
-   - 在本仓库中的状态：**仅引用，不复制**（通过 SEELE_BRIDGE 环境变量
-     与候选路径指向真源）。
+3. Seele 引擎（seele_bridge.js + seele_drive.js）
+   ----------------------------------------------
+   - 来源：JOJO 的 Seele 项目（seele_bridge.js = P1-4 人格/驱力桥；
+     seele_drive.js = P2 Maslow 5 驱力 DriveBus，驱力设计移植自 Neshama C++）。
+   - IP 归属：JOJO / Seele（驱力设计衍生自 Neshama IP）。
+   - 在本仓库中的状态：**已 vendored 进 `engine/`**。
+   - 许可证：由其原项目决定，不受本仓库 MIT 许可证覆盖。
 
 4. SoulSpec 兼容性
    ----------------
@@ -35,5 +33,5 @@ Stemem —— 知识产权（IP）归属声明
      SoulSpec v0.4 静态 DOC 标准（第三方标准），用于进 ClawSouls 分发。
    - SoulSpec 标准本身由 soul-spec-mcp 社区维护，与本仓库 MIT 许可互不冲突。
 
-—— 分发前请确保：引擎真源（NeshamaEngine / Seele 桥）已按上述方式
-    vendored 进本仓库 engine/ 子目录，或接收方已知晓引用路径要求。
+—— 引擎已随仓库分发（vendored 于 `engine/`），clone 后开箱即跑，
+   无需再配置 NESHAMA_ENGINE / SEELE_BRIDGE 环境变量。

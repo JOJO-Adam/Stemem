@@ -15,7 +15,7 @@ Stemem 的解法：**人格态存本地文件，不在 prompt**；prompt 只放�
 ## 核心特性
 
 - 🔒 **本地优先 · 零出站**：纯 Node 内置模块，hand-roll 的 MCP stdio 协议，**无任何网络/供应链依赖**。所有状态落本地 JSON。
-- 🧬 **真人格引擎**：复用经过验证的 NeshamaEngine（OCEAN 五维 + 9 驱力 + 15 复合情绪 + 4 情绪代理 + 性格锁），**引用不复制**（真源在 JOJO 的 Neshama 项目）。
+- 🧬 **真人格引擎**：复用经过验证的 NeshamaEngine（OCEAN 五维 + 9 驱力 + 15 复合情绪 + 4 情绪代理 + 性格锁），**已 vendored 进 `engine/`**（非引用）。
 - 🔄 **抗压缩失忆**：状态在本地文件，压缩/重启/子 Agent 切换都不丢人格。
 - 🧩 **9 工具契约**：init / event / tick / satisfy / snapshot / autostep / intervene / status / generate_soul。
 - 🪪 **IP 清晰分离**：引擎代码与运行时产品归属不同主体（见 `NOTICE`）。
@@ -34,16 +34,16 @@ stemem-mcp
 npx stemem
 ```
 
+> **仓库已自包含**：人格引擎（NeshamaEngine）与 Seele 驱力桥已 **vendored 进 `engine/`**（CommonJS，经 `engine/package.json` 声明），`clone` 后无需配置 `NESHAMA_ENGINE` / `SEELE_BRIDGE` 即可直接运行。
+
 ### 配置环境变量
 
 | 变量 | 作用 | 默认 |
 |---|---|---|
 | `STEMEM_AGENT_ID` | 人格实例 ID（多分身互不污染） | `default` |
 | `STEMEM_STATE_DIR` | 状态目录（每 agent 一个子目录） | `~/.stemem` |
-| `NESHAMA_ENGINE` | NeshamaEngine 真源路径 | `../engine/neshama_engine.js` → 本机 Neshama 项目 |
-| `SEELE_BRIDGE` | Seele 引擎桥路径 | `../engine/seele_bridge.js` → 本机 Seele 项目 |
-
-> 默认路径指向 JOJO 本机的 `Neshama/Neshama_Sim/neshama_engine.js` 与 `Seele/engine/seele_bridge.js`。若要分发给他人，请把这两个文件 vendored 进本仓库 `engine/` 子目录（见 §偏离说明）。
+| `NESHAMA_ENGINE` | NeshamaEngine 路径（可选；默认用 vendored 副本） | `engine/neshama_engine.js` |
+| `SEELE_BRIDGE` | Seele 引擎桥路径（可选；默认用 vendored 副本） | `engine/seele_bridge.js` |
 
 ## MCP 工具表
 
@@ -67,6 +67,10 @@ npx stemem
 2. 当本轮涉及情绪/关系/价值观/自我/回忆/JOJO 等内容时，调 `event` 驱动演化。
 3. 状态在本地文件不在 prompt——压缩不会丢失人格，多个子 Agent 共享同一真相源。
 
+## WorkBuddy Skill
+
+仓库自带一个 WorkBuddy Skill（`skills/stemem/SKILL.md`），把 Stemem 作为 MCP server 接入 WorkBuddy：含 `mcp.json` 接入片段、每轮运行时契约、9 工具表。把该 Skill 导入 WorkBuddy（或直接把 `stemem` 配进 `~/.workbuddy/mcp.json` 的 `mcpServers`）即可启用；首次需在「连接器管理」对 `stemem` 点「信任」。
+
 ## 测试
 
 ```bash
@@ -77,17 +81,11 @@ node test/smoke.test.js
 
 冒烟测试覆盖：initialize → tools/list（9 工具）→ init/event/tick/snapshot/generate_soul 调用 → `inject_prompt` 注入串 → **跨进程确定性恢复人格态**。
 
-## WorkBuddy Skill
-
-仓库自带一个 WorkBuddy Skill（`skills/stemem/SKILL.md`），把 Stemem 作为 MCP server 接入 WorkBuddy：含 `mcp.json` 接入片段、每轮运行时契约、9 工具表。把该 Skill 导入 WorkBuddy（或直接把 `stemem` 配进 `~/.workbuddy/mcp.json` 的 `mcpServers`）即可启用；首次需在「连接器管理」对 `stemem` 点「信任」。
-
----
-
 ## 知识产权（IP）归属
 
-- **NeshamaEngine（`neshama_engine.js`）**：人格计算引擎真源，IP 归 **JOJO / Neshama**（资本 Neshama 消费产品，neshama.cn）。本仓库仅引用，不复制。
-- **Stemem 运行时产品**（本仓库全部 `src/`、设计文档、MCP 封装）：**JOJO&Adam 集团**资产。
-- **Seele 引擎桥（`seele_bridge.js`）**：归 **JOJO / Seele** 项目。
+- **NeshamaEngine（`neshama_engine.js`）**：人格计算引擎真源，IP 归 **JOJO / Neshama**（资本 Neshama 消费产品，neshama.cn）。本仓库已 vendored 进 `engine/`，其许可证由原项目决定，不受本仓库 MIT 覆盖。
+- **Stemem 运行时产品**（本仓库全部 `src/`、设计文档、MCP 封装、`engine/package.json`）：**JOJO&Adam 集团**资产，MIT。
+- **Seele 引擎（`seele_bridge.js` + `seele_drive.js`）**：归 **JOJO / Seele** 项目，已 vendored 进 `engine/`。
 
 详见 [`NOTICE`](./NOTICE)。
 
@@ -98,3 +96,4 @@ MIT —— 见 [`LICENSE`](./LICENSE)。
 ---
 
 *本项目遵循「先设计后开发」纪律；完整设计见 `设计要点.md`（含 §10 MCP server 工具契约设计）。*
+*English version: [README.en.md](./README.en.md)*

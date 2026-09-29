@@ -26,15 +26,17 @@ description_en: "Local-first, zero-egress identity runtime for agents (MCP serve
   "mcpServers": {
     "stemem": {
       "command": "node",
-      "args": ["/Users/jojo/AI_Projects/Stemem/src/server.js"],
+      "args": ["<ABSOLUTE_PATH_TO_YOUR_STEMEM_CLONE>/src/server.js"],
       "env": {}
     }
   }
 }
 ```
 
+> 把上面的 `<ABSOLUTE_PATH_TO_YOUR_STEMEM_CLONE>` 换成你 clone 本仓库后的绝对路径（例如 `/home/you/Stemem`）。
+
 - 写完后到「连接器管理」里对 `stemem` 点「信任」启用（stdio 本地进程，无网络）。
-- 引擎桥路径（`SEELE_BRIDGE` / `NESHAMA_ENGINE`）在 JOJO 本机按候选路径自动解析，无需手动设 env；**发布到 GitHub 分发时改为 vendored 进 `engine/`**（见仓库 `README` / `NOTICE`）。
+- 引擎桥已 **vendored 进 `engine/`**，`SEELE_BRIDGE` / `NESHAMA_ENGINE` 默认指向 vendored 副本，无需手动设 env（见仓库 `README` / `NOTICE`）。
 - 状态默认落 `~/.stemem/<agent-id>/seele_state.json`；可用 `STEMEM_STATE_DIR` / `STEMEM_AGENT_ID` 环境变量覆盖（多 Agent 互不污染）。
 
 ## 2. 运行时契约（接入后，每轮 loop）
@@ -69,4 +71,4 @@ Stemem 做「动态运行时」，SoulSpec 做「静态 DOC 标准」——**互
 - 主力 = 开源 MCP 工具集（GitHub，跨框架 + 橱窗 + 本地优先）。
 - 次级 = 本 Skill（保 WorkBuddy 已装资产触达）。
 - 三级 = Adam persona 发 SoulSpec 包进 ClawSouls（`clawsouls/adam/`）。
-- ⚠️ 发 GitHub / ClawSouls 前硬前置：核实银行「无偿 OSS 对外活动」申报（JOJO 本人确认，按所在行规）。
+- ✅ 银行合规：JOJO 所在银行鼓励科技研发，**无偿 OSS 对外活动无需申报**（JOJO 本人已确认；Adam 非律师，最终以所在行规为准）。
