@@ -18,6 +18,7 @@ Stemem 的解法：**人格态存本地文件，不在 prompt**；prompt 只放�
 - 🧬 **真人格引擎**：复用经过验证的 NeshamaEngine（OCEAN 五维 + 9 驱力 + 15 复合情绪 + 4 情绪代理 + 性格锁），**已 vendored 进 `engine/`**（非引用）。
 - 🔄 **抗压缩失忆**：状态在本地文件，压缩/重启/子 Agent 切换都不丢人格。
 - 🧩 **9 工具契约**：init / event / tick / satisfy / snapshot / autostep / intervene / status / generate_soul。
+- 🗣️ **语气随情绪漂移（最可感知的层）**：`snapshot` 把当前主导情绪（15 种中文复合情绪，键名对齐 NeshamaEngine）+ OCEAN + 主导驱力编译成 6 维语气画像（温度/直接度/能量/犹豫度/幽默/正式度）与一段「语气指令」，注回宿主每轮 prompt——被夸后自信直接、被背刺后冷硬可毒舌，人格不是写死的腔调，而是会随遭遇变声的活体。
 - 🪪 **IP 清晰分离**：引擎代码与运行时产品归属不同主体（见 `NOTICE`）。
 
 ## 安装 / 运行
@@ -84,6 +85,21 @@ node test/engine.selftest.js
 - **smoke**：initialize → tools/list（9 工具）→ init/event/tick/snapshot/generate_soul → `inject_prompt` 注入串 → **跨进程确定性恢复人格态**。
 - **integration**：真实 MCP stdio 客户端驱动**全部 9 工具**（含 satisfy / autostep / intervene / status），校验运行时契约（snapshot 注入串、event 演化、跨重启确定性）。
 - **engine selftest**：直接驱动 vendored `seele_bridge`，验证 NeshamaEngine 性格锁（OCEAN∈[0,1]）、驱力紧迫、满足闭环、序列化往返、自主行为 / 干预。
+
+## 看得见（Demos · 证明"装上能感知"）
+
+```bash
+# ① 反压缩：进程被杀 + 上下文压缩后，凭本地磁盘 JSON 确定性恢复完整人格态（纯 SOUL.md 做不到）
+node examples/antiamnesia-demo.mjs
+
+# ② 强制注入 harness：宿主 3 行 loop 每轮 preTurn→注入→postTurn，装上去即感知人格层活着
+node examples/harness-demo.mjs
+
+# ③ 语气随情绪漂移（最可感知）：同人格基线，4 种遭遇 → 语气夜与昼分化
+node examples/tone-demo.mjs
+```
+
+`examples/tone-demo.mjs` 最直观：被夸→自豪（偏暖、直接、略 showy）/ 被背刺→愤怒（偏冷、blunt、可带毒舌）/ 失误→孤独（节奏放缓）/ 庆祝→自豪。这就是用户最能感知 Stemem 的部分。
 
 ## 知识产权（IP）归属
 

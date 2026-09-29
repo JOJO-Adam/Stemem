@@ -78,7 +78,12 @@ function syncDriveOcean(drive, engine) {
 // 自校准（不碰 Neshama 真源）：用 engine.emotions（6 基础 + 4 代理）跑 COMPLEX_EMOTIONS
 // 加权强度，阈值降到 SEELE_EMOTION_THRESHOLD，让情绪在少量交互下就冒头；无复合跨阈值时
 // 回退主导基础情绪作 mood —— 保证 06 视觉 / 05 物语 / 自主行为恒有情绪信号。
-const SEELE_EMOTION_THRESHOLD = 0.42;
+//
+// 校准历史：0.42 → 0.35（09-29）。原因：负向复合情绪（shame/anger/betrayal 类）单次事件
+// 强度仅 ~0.34，卡在 0.42 下永远浮不出 → 主导情绪黏在正向往向（pride 易浮），人格层"听不出
+// 情绪变化"。降到 0.35 后单次负面遭遇也能浮现，语气随情绪漂移才真正可被用户感知。
+// 代价：静置态会多浮出 1–2 个低强度复合情绪（如 pride/contentment 作静息基调），可接受。
+const SEELE_EMOTION_THRESHOLD = 0.35;
 
 function computeMoodSurface(engine) {
   const state = engine.emotions || {};

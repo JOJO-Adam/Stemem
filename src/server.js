@@ -7,6 +7,7 @@
 // McpServer/StdioServerTransport，dispatch() 与工具表保持不变。
 import { callBridge } from "./engine_client.js";
 import { formatSnapshotPrompt, contractPrompt, shouldTriggerEvent } from "./runtime_contract.js";
+import { toneProfile } from "./tone.js";
 import { generateSoul } from "./soulspec.js";
 
 const AGENT_ID = process.env.STEMEM_AGENT_ID || "default";
@@ -123,6 +124,7 @@ async function dispatch(name, args = {}) {
         active_emotions: d.active_emotions,
         personality: d.personality,
         drive: d.drive,
+        tone: toneProfile(d),
         inject_prompt: formatSnapshotPrompt(d),
       };
     }

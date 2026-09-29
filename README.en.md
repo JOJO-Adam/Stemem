@@ -18,6 +18,7 @@ The two are complementary: SoulSpec is the static standard; Stemem is the dynami
 - 🧬 **Real personality engine**: Reuses the battle-tested NeshamaEngine (OCEAN five factors + 9 drives + 15 compound emotions + 4 emotion agents + personality locks), **vendored into `engine/`** (not referenced).
 - 🔄 **Compaction-amnesia resistant**: State is in local files; personality survives compaction/restarts/sub-agent switches.
 - 🧩 **9-tool contract**: init / event / tick / satisfy / snapshot / autostep / intervene / status / generate_soul.
+- 🗣️ **Tone drifts with emotion (the most perceptible layer)**: `snapshot` compiles the current dominant emotion (15 Chinese compound emotions, keyed to match NeshamaEngine) + OCEAN + dominant drive into a 6-axis tone profile (warmth/directness/energy/hedging/humor/formality) and a "tone directive" injected into the host's per-turn prompt — confident after praise, cold/blunt after betrayal. Personality is a living voice, not a hardcoded register.
 - 🪪 **Clean IP separation**: Engine code and runtime product belong to different entities (see `NOTICE`).
 
 ## Install / Run
@@ -84,6 +85,21 @@ node test/engine.selftest.js
 - **smoke**: initialize → tools/list (9 tools) → init/event/tick/snapshot/generate_soul → `inject_prompt` injection string → **cross-process deterministic personality-state recovery**.
 - **integration**: a real MCP stdio client driving **all 9 tools** (incl. satisfy / autostep / intervene / status), verifying the runtime contract (snapshot injection, event-driven evolution, cross-restart determinism).
 - **engine selftest**: drives the vendored `seele_bridge` directly, verifying NeshamaEngine personality lock (OCEAN∈[0,1]), drive urgency, satisfaction loop, serialize round-trip, autonomous behavior / intervention.
+
+## See it work (Demos)
+
+```bash
+# ① Anti-amnesia: after process kill + context compaction, recover full personality state from local disk JSON (impossible with plain SOUL.md)
+node examples/antiamnesia-demo.mjs
+
+# ② Forced-injection harness: host 3-line loop preTurn→inject→postTurn makes the persona layer feel alive on install
+node examples/harness-demo.mjs
+
+# ③ Tone drifts with emotion (most perceptible): same personality baseline, 4 situations → night-and-day tone divergence
+node examples/tone-demo.mjs
+```
+
+`examples/tone-demo.mjs` is the most direct: praised→pride (warm, direct, slightly showy) / betrayed→anger (cold, blunt, can be edgy) / failed→loneliness (slows down) / celebrated→pride. This is the part users perceive most.
 
 ## Intellectual Property (IP) ownership
 
