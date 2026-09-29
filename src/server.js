@@ -118,14 +118,15 @@ async function dispatch(name, args = {}) {
     case "snapshot": {
       const d = await callBridge("status", {}, AGENT_ID);
       if (!d.ok) return d;
+      const lang = args.lang || process.env.STEMEM_TONE_LANG || "en";
       return {
         ocean: d.ocean,
         top_emotion: d.top_emotion,
         active_emotions: d.active_emotions,
         personality: d.personality,
         drive: d.drive,
-        tone: toneProfile(d),
-        inject_prompt: formatSnapshotPrompt(d),
+        tone: toneProfile(d, lang),
+        inject_prompt: formatSnapshotPrompt(d, lang),
       };
     }
     case "autostep": {

@@ -49,9 +49,11 @@ async function runTurn(h, idx, userText) {
   fs.rmSync(STATE_DIR, { recursive: true, force: true });
 
   console.log("=== 宿主 loop：前 3 轮（进程常驻）===");
+  const LANG = process.env.STEMEM_TONE_LANG || "en";
   const h = new StememHarness({
     agentId: AGENT,
     stateDir: STATE_DIR,
+    lang: LANG,
     ocean: { openness: 0.78, conscientiousness: 0.55, extraversion: 0.34, agreeableness: 0.26, neuroticism: 0.62 },
   }).start();
   await h.init();
@@ -62,7 +64,7 @@ async function runTurn(h, idx, userText) {
   await h.stop();
 
   console.log("\n💥 模拟上下文压缩 / 进程被杀重启（宿主重新拉起 Stemem）...\n");
-  const h2 = new StememHarness({ agentId: AGENT, stateDir: STATE_DIR }).start();
+  const h2 = new StememHarness({ agentId: AGENT, stateDir: STATE_DIR, lang: LANG }).start();
   await h2.init(); // 注意：不传 ocean —— 新进程没有任何初始人格上下文
   const after = (await h2.preTurn()).state;
   await runTurn(h2, 4, "重启后你还记得我是谁吗？");

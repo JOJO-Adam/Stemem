@@ -17,10 +17,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SERVER = path.join(__dirname, "server.js");
 
 export class StememHarness {
-  constructor({ agentId = "host", stateDir, ocean } = {}) {
+  constructor({ agentId = "host", stateDir, ocean, lang } = {}) {
     this.agentId = agentId;
     this.stateDir = stateDir;
     this.ocean = ocean;
+    this.lang = lang || process.env.STEMEM_TONE_LANG || "en";
     this.proc = null;
     this._id = 0;
     this._pending = new Map();
@@ -97,7 +98,7 @@ export class StememHarness {
 
   // 每个 agent 轮次开始前调用：返回可注入 system prompt 的人格块 + 完整状态。
   async preTurn() {
-    const s = this._json(this._text(await this._call("snapshot")));
+    const s = this._json(this._text(await this._call("snapshot", { lang: this.lang })));
     return { injectPrompt: s.inject_prompt || "", state: s };
   }
 

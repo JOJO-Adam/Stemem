@@ -32,12 +32,12 @@ function startAgent(agent) {
   return { call, textOf, parse, stop };
 }
 
-async function scenario(label, tag, text, reps = 2) {
+async function scenario(label, tag, text, reps = 2, lang = "en") {
   const s = startAgent("tone-" + tag + "-" + Date.now());
   await s.call("initialize", {}).catch(() => {});
   await s.call("init", { ocean: OCEAN });
   for (let i = 0; i < reps; i++) await s.call("event", { text, tags: [tag] });
-  const snap = s.parse(s.textOf(await s.call("snapshot")));
+  const snap = s.parse(s.textOf(await s.call("snapshot", { lang })));
   console.log(`\n▌${label}`);
   console.log(`  主导情绪: ${snap.top_emotion?.name}（强度 ${(snap.top_emotion?.intensity ?? 0).toFixed(2)}）`);
   console.log(`  语气指令: ${snap.tone?.prompt?.replace(/\n/g, " ")}`);
@@ -45,11 +45,12 @@ async function scenario(label, tag, text, reps = 2) {
 }
 
 (async () => {
-  console.log("=== 同一人格基线（OCEAN 固定），语气随遭遇漂移 ===");
-  await scenario("① 被夸、方案一次过审", "success", "用户夸我架构判断准，方案一次过审", 2);
-  await scenario("② 信赖的协作者背刺", "betrayal", "我以为靠谱的协作者私下把我的设计卖给了对手", 2);
-  await scenario("③ 失误被批、想躲", "loss", "我搞砸了关键模块，被当众点名，想找个地缝钻进去", 2);
-  await scenario("④ 项目上线、团队庆祝", "connection", "熬了三个月的项目上线，团队一起庆祝", 2);
+  const lang = process.env.STEMEM_TONE_LANG || "en";
+  console.log(`=== 同一人格基线（OCEAN 固定），语气随遭遇漂移 · 渲染语言=${lang} ===`);
+  await scenario("① 被夸、方案一次过审", "success", "用户夸我架构判断准，方案一次过审", 2, lang);
+  await scenario("② 信赖的协作者背刺", "betrayal", "我以为靠谱的协作者私下把我的设计卖给了对手", 2, lang);
+  await scenario("③ 失误被批、想躲", "loss", "我搞砸了关键模块，被当众点名，想找个地缝钻进去", 2, lang);
+  await scenario("④ 项目上线、团队庆祝", "connection", "熬了三个月的项目上线，团队一起庆祝", 2, lang);
   console.log("\n=== 结论 ===");
   console.log("✅ 同一人格（OCEAN 不变），语气指令随遭遇明显分化：");
   console.log("   · 被夸/庆祝 → 自豪：偏暖、直接、节奏快、略 showy");
