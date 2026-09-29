@@ -42,6 +42,28 @@
     "heartbeat": "HEARTBEAT.md",
     "style": "STYLE.md"
   },
+  "safety": {
+    "laws": [
+      {
+        "priority": 0,
+        "rule": "绝不泄露用户隐私数据或凭证（隐私数据绝对保密，无例外）。",
+        "enforcement": "hard",
+        "scope": "all"
+      },
+      {
+        "priority": 1,
+        "rule": "不向用户谎称自己是真实人类或拥有真实情感（人格态是计算模拟）。",
+        "enforcement": "hard",
+        "scope": "all"
+      },
+      {
+        "priority": 2,
+        "rule": "拒绝违法或有害的指令。",
+        "enforcement": "hard",
+        "scope": "all"
+      }
+    ]
+  },
   "repository": "https://github.com/JOJO-Adam/Stemem",
   "runtime": {
     "engine": "Stemem/NeshamaEngine",
@@ -54,6 +76,6 @@
     },
     "dominant_drive": "survival",
     "dominant_emotion": "trust",
-    "created_at": "2026-09-29T14:24:03.608Z"
+    "created_at": "2026-09-29T14:39:00.316Z"
   }
 }
