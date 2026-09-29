@@ -7,6 +7,7 @@
 // McpServer/StdioServerTransport，dispatch() 与工具表保持不变。
 import { callBridge } from "./engine_client.js";
 import { formatSnapshotPrompt, contractPrompt, shouldTriggerEvent } from "./runtime_contract.js";
+import { isFirstRun, firstRunHint } from "./onboarding.js";
 import { toneProfile } from "./tone.js";
 import { generateSoul } from "./soulspec.js";
 
@@ -34,6 +35,7 @@ const TOOLS = [
       properties: {
         text: { type: "string", description: "事件文本" },
         tags: { type: "array", items: { type: "string" }, description: "情绪/驱力标签，如 betrayal,conflict,joy" },
+        importance: { type: "string", enum: ["low", "normal", "high"], description: "事件重要性；high 触发反刍、延长相关情绪衰减（对应'记一会儿'）" },
         drive_deltas: { type: "object", description: "驱力增量 JSON，如 {\"belonging\":0.2}" },
       },
     },
@@ -85,6 +87,17 @@ const TOOLS = [
   },
 ];
 
+// 首跑提示：状态尚未初始化时，在 snapshot/status 注入新手任务提示，让宿主每轮都能邀请用户玩一次。
+// 这是「装上即被邀请」的轻量实现（stdio MCP 无法弹宿主 UI，但能往 prompt 里塞提示）。
+function maybeOnboarding(result) {
+  if (result && result.ok && isFirstRun(AGENT_ID)) {
+    result.onboarding_available = true;
+    if (typeof result.inject_prompt === "string") result.inject_prompt += "\n\n" + firstRunHint();
+    else result.onboarding_hint = firstRunHint();
+  }
+  return result;
+}
+
 // ---------- 分发（工具实现，包裹 seele_bridge CLI） ----------
 async function dispatch(name, args = {}) {
   switch (name) {
@@ -97,6 +110,7 @@ async function dispatch(name, args = {}) {
       const opts = {};
       if (args.text != null) opts.text = args.text;
       if (args.tags) opts.tags = Array.isArray(args.tags) ? args.tags.join(",") : String(args.tags);
+      if (args.importance) opts.importance = args.importance;
       if (args.drive_deltas) opts.drive_deltas = JSON.stringify(args.drive_deltas);
       const d = await callBridge("event", opts, AGENT_ID);
       // 附上契约启发式，方便宿主判断（也演示 shouldTriggerEvent）
@@ -119,7 +133,7 @@ async function dispatch(name, args = {}) {
       const d = await callBridge("status", {}, AGENT_ID);
       if (!d.ok) return d;
       const lang = args.lang || process.env.STEMEM_TONE_LANG || "en";
-      return {
+      const result = {
         ocean: d.ocean,
         top_emotion: d.top_emotion,
         active_emotions: d.active_emotions,
@@ -128,6 +142,7 @@ async function dispatch(name, args = {}) {
         tone: toneProfile(d, lang),
         inject_prompt: formatSnapshotPrompt(d, lang),
       };
+      return maybeOnboarding(result);
     }
     case "autostep": {
       const opts = {};
@@ -142,7 +157,8 @@ async function dispatch(name, args = {}) {
       return await callBridge("intervene", opts, AGENT_ID);
     }
     case "status": {
-      return await callBridge("status", {}, AGENT_ID);
+      const r = await callBridge("status", {}, AGENT_ID);
+      return maybeOnboarding(r);
     }
     case "generate_soul": {
       const r = await generateSoul(args.target_dir || ".", AGENT_ID);

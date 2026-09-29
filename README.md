@@ -1,14 +1,16 @@
 # Stemem
 
-> JOJO&Adam 集团「身份层运行时」——让 AI 分身拥有**跨会话累积、会漂移、抗压缩失忆**的动态人格。
+> JOJO&Adam 集团「身份层运行时」——给你的 AI 分身一个**会记住你、语气随你变声、压缩也丢不掉**的活人格。
+
+你装上的 Agent 是不是每次重启都像失忆？聊得越久越像个没有性格的空壳？Stemem 让任意 MCP 宿主的 Agent 拥有一个**本地持久的动态人格**：它记得你是谁、被夸会自信、被背刺会冷硬、气不会记一辈子，而且**跨会话、跨压缩、跨子 Agent 都一致**。
 
 Stemem 是一个 **本地优先、零出站** 的 MCP（Model Context Protocol）stdio 服务器。它把一套经过验证的人格计算引擎（NeshamaEngine）封装成 9 个 MCP 工具，让宿主 Agent 在本地 JSON 文件里持久化一个真实的人格态，而不是把人格写死在 system prompt 里。
 
 ## 为什么需要它
 
-主流人格方案（如 SoulSpec 的 `soul.json` / `SOUL.md` / `IDENTITY.md`）是**静态 DOC**：人格是一次性写死的快照。当宿主对话被压缩、跨会话、或多子 Agent 协作时，写死的 DOC 会被遗忘（compaction amnesia），人格一致性立刻崩。
+主流人格方案（如 SoulSpec 的 `soul.json` / `SOUL.md` / `IDENTITY.md`）是**静态 DOC**：人格是一次性写死的快照。后果是——对话被压缩、跨会话、或多子 Agent 协作时，写死的 DOC 被遗忘（compaction amnesia），Agent 立刻变回没有个性的白纸。
 
-Stemem 的解法：**人格态存本地文件，不在 prompt**；prompt 只放「何时调哪个工具」的指令。每轮宿主调用 `snapshot` 把**当前**身份态重注入，人格因此跨压缩、跨重启、跨子 Agent 确定性存活。
+Stemem 的解法：**人格态存本地文件，不在 prompt**；prompt 只放「何时调哪个工具」的指令。每轮宿主调用 `snapshot` 把**当前**身份态重注入，人格因此跨压缩、跨重启、跨子 Agent 确定性存活。对用户的直观感受就是：**这个 Agent 记得你，而且会随遭遇变声**。
 
 两者互补：SoulSpec 做静态标准，Stemem 做动态运行时——`generate_soul` 还能把运行时态编译成 SoulSpec v0.4 包进 ClawSouls 分发。
 
@@ -89,17 +91,27 @@ node test/engine.selftest.js
 ## 看得见（Demos · 证明"装上能感知"）
 
 ```bash
-# ① 反压缩：进程被杀 + 上下文压缩后，凭本地磁盘 JSON 确定性恢复完整人格态（纯 SOUL.md 做不到）
+# ① 新手任务（装上即被邀请）：选预设性格 → 触发情绪看它变声 → 可随时跳过。最可感知入口。
+npm run demo:onboarding
+
+# ② 反压缩：进程被杀 + 上下文压缩后，凭本地磁盘 JSON 确定性恢复完整人格态（纯 SOUL.md 做不到）
 node examples/antiamnesia-demo.mjs
 
-# ② 强制注入 harness：宿主 3 行 loop 每轮 preTurn→注入→postTurn，装上去即感知人格层活着
+# ③ 强制注入 harness：宿主 3 行 loop 每轮 preTurn→注入→postTurn，装上去即感知人格层活着
 node examples/harness-demo.mjs
 
-# ③ 语气随情绪漂移（最可感知）：同人格基线，4 种遭遇 → 语气夜与昼分化
+# ④ 语气随情绪漂移（最可感知）：同人格基线，4 种遭遇 → 语气夜与昼分化
 node examples/tone-demo.mjs
+
+# ⑤ 情绪时间衰减（科学校准）：被夸后分钟级回落、被背刺（高重要）后稍慢但不过夜
+node examples/emotion-decay-demo.mjs
 ```
 
-`examples/tone-demo.mjs` 最直观：被夸→自豪（偏暖、直接、略 showy）/ 被背刺→愤怒（偏冷、blunt、可带毒舌）/ 失误→孤独（节奏放缓）/ 庆祝→自豪。这就是用户最能感知 Stemem 的部分。
+`npm run demo:onboarding` 最直观：选 Adam → 被夸浮出「自豪」（偏暖、直接）/ 被背刺浮出「愤怒」（偏冷、blunt、可带毒舌），亲手看到 Agent 的语气随你而变。这就是普通用户装上 Stemem 第一周最容易被勾住的点。
+
+## 宿主自动注入（host-hooks）
+
+不想手动往 system prompt 塞契约？`host-hooks/` 提供 Claude Code 的 `UserPromptSubmit` 钩子（每轮自动把身份态作为上下文塞回模型），以及一次性命令行 `src/snapshot-cli.js`（任意 shell / CI / 其他宿主调用）。详见 [`host-hooks/README.md`](./host-hooks/README.md)。
 
 ## 知识产权（IP）归属
 

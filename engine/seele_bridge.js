@@ -45,15 +45,16 @@ function loadState() {
   const d = JSON.parse(fs.readFileSync(STATE_PATH, 'utf8'));
   const engine = NeshamaEngine.deserialize(d.engine || '{}');
   const drive = SeeleDriveSystem.deserialize(d.drive || '{}');
-  return { engine, drive };
+  return { engine, drive, rumination: d.rumination || {} };
 }
 
-function saveState(engine, drive) {
+function saveState(engine, drive, rumination) {
   const out = {
     version: 1,
     updated_at: new Date().toISOString(),
     engine: JSON.parse(engine.serialize()),
     drive: JSON.parse(drive.serialize()),
+    rumination: rumination && Object.keys(rumination).length ? rumination : {},
   };
   fs.mkdirSync(path.dirname(STATE_PATH), { recursive: true });
   fs.writeFileSync(STATE_PATH, JSON.stringify(out, null, 2), 'utf8');
@@ -62,7 +63,7 @@ function saveState(engine, drive) {
 function freshState(ocean = null) {
   const engine = new NeshamaEngine(ocean || null);
   const drive = new SeeleDriveSystem(engine.ocean);
-  return { engine, drive };
+  return { engine, drive, rumination: {} };
 }
 
 // P1 的 OCEAN 演化后，把最新人格推给驱动层（人格调制驱力必须用最新值）。
@@ -123,26 +124,55 @@ function computeMoodSurface(engine) {
   return surfaced;
 }
 
-// ---------- 情绪时间衰减（Seele 校准层） ----------
+// ---------- 情绪时间衰减（Seele 校准层，科学校准版） ----------
 // 解决「压缩免疫的反面诅咒」：状态永不忘 = 负面态永不忘 → 否则会和一个永久阴阳怪气的
 // agent 共事到疯。Neshama 真源只在 triggerEvent 时按事件衰减 0.15，但 tick（时间流逝）
 // 不触发事件 → 空闲期情绪冻结、永不回落。这里在 tick/autostep 时按经过秒数做指数衰减，
-// 把 engine.emotions 拉回 baseline_emotions。时间常数 TAU≈1 天：单次负面遭遇约 1–2 天退场，
-// 重度(×3)约 3 天；正情绪同样回落（狂喜也会平复）。纯状态层松弛——不中断工作、不需批准、
-// 不调漫游，不碰「情绪≠工作表现」护栏（09-29 JOJO 决策：做衰减，不做"请假去漫游"）。
-const EMOTION_DECAY_TAU = 86400; // 秒，1 天时间常数（Seele 自校准旋钮，同 SEELE_EMOTION_THRESHOLD）
+// 把 engine.emotions 拉回 baseline_emotions。
+//
+// 科学校准（09-30 JOJO 质疑"1 天 TAU 反科学"后重做）：公式 state(t)=baseline+(state-baseline)·exp(−γ·Δt)
+// 正是 Kuppens(2010) DynAffect 的 Ornstein-Uhlenbeck 模型（数学结构正确，错的是常数 TAU）。
+// 各情绪时间常数取自 Verduyn & Lavrijsen(2014/2015) 与经验取样中位数：典型情绪片段极短
+// （愤怒中位 11–22min、恐惧~16min、喜悦~19min），悲伤最长寿但给小时级（非 120h 反刍极端）。
+// 反刍(rumination)：高重要性事件 / 反刍型情绪（背叛/失落/冲突）临时延长 TAU（Verduyn: 重要性+反刍驱动时长），
+// 窗口 RUMINATION_WINDOW 后回落正常速率——既不一秒忘、也不记仇到天荒地老。
+// 纯状态层松弛——不中断工作、不需批准、不调漫游，不碰「情绪≠工作表现」护栏。
+const EMOTION_DECAY_TAU = {
+  joy: 1800,          // 30 min（正情绪略黏）
+  sadness: 10800,     // 3 h（最长寿；反刍极端才到天）
+  anger: 1200,        // 20 min
+  fear: 900,          // 15 min
+  surprise: 120,      // 2 min
+  disgust: 1500,      // 25 min
+  anticipation: 1800, // 30 min
+  satisfaction: 1800, // 30 min
+  achievement: 1800,  // 30 min
+  trust: 3600,        // 1 h（关系型，重建/衰退更慢）
+};
+const EMOTION_DECAY_TAU_DEFAULT = 1800; // 未列明情绪回退 30 min
+const RUMINATION_TAU_MULT = 8;          // 反刍时 TAU 放大倍数（情绪滞留更久）
+const RUMINATION_WINDOW = 3600;         // 反刍持续窗口（秒）：窗口内慢衰，过窗正常衰
+const RUMINATION_TAGS = new Set([
+  'betrayal', 'loss', 'failure', 'conflict', 'isolation', 'grief',
+  '背叛感', '悲伤', '羞耻', '屈辱', '孤独', '失落',
+]);
 
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 
-function decayEmotions(engine, seconds) {
+// rumination: { [emotionKey]: 剩余反刍秒数 }；为 0/缺失则按常态 TAU 衰减。
+function decayEmotions(engine, seconds, rumination) {
   const emo = engine.emotions || {};
   const base = engine.baseline_emotions || {};
-  // k = 1 - e^(-t/TAU)：已衰减比例（越大越靠近基线）。t=0 → k=0（不动），t≫TAU → k→1（落基线）
-  const k = 1 - Math.exp(-Math.max(0, Number(seconds) || 0) / EMOTION_DECAY_TAU);
-  if (k <= 0) return;
+  const t = Math.max(0, Number(seconds) || 0);
+  if (t <= 0) return;
   for (const key of Object.keys(emo)) {
+    const tau = (EMOTION_DECAY_TAU[key] != null ? EMOTION_DECAY_TAU[key] : EMOTION_DECAY_TAU_DEFAULT);
+    const ruminating = rumination && rumination[key] > 0;
+    // k = 1 - e^(-t/(TAU·mult))：已衰减比例（越大越靠近基线）。反刍时 mult=8 → 衰减更慢。
+    const k = 1 - Math.exp(-t / (tau * (ruminating ? RUMINATION_TAU_MULT : 1)));
+    if (k <= 0) continue;
     const b = base[key] != null ? base[key] : 0.4;
     const cur = emo[key] || 0;
     // new = cur·(1−k) + b·k：向基线移动 k 比例，绝不越过基线（clamp 与 Neshama 一致）
@@ -220,7 +250,7 @@ function main() {
     if (cmd === 'init') {
       const ocean = opts.ocean ? JSON.parse(opts.ocean) : null;
       const { engine, drive } = freshState(ocean);
-      saveState(engine, drive);
+      saveState(engine, drive, {});
       out({ ok: true, action: 'init', ...snapshot(engine, drive) });
       return;
     }
@@ -232,10 +262,21 @@ function main() {
       const text = opts.text || '(无名事件)';
       const tags = (opts.tags || '').split(',').map((s) => s.trim()).filter(Boolean);
       const drive_deltas = opts.drive_deltas ? JSON.parse(opts.drive_deltas) : {};
+      const importance = opts.importance || 'normal'; // low | normal | high
       engine.triggerEvent({ text, emotion_tags: tags, drive_deltas });
+      // 反刍：高重要性事件 或 反刍型标签 → 延长相关情绪衰减（Verduyn: 重要性+反刍驱动时长）
+      const rum = st.rumination || {};
+      const isHigh = importance === 'high' || tags.some((t) => RUMINATION_TAGS.has(t));
+      if (isHigh) {
+        const emo = engine.emotions || {};
+        const base = engine.baseline_emotions || {};
+        for (const key of Object.keys(emo)) {
+          if (emo[key] > (base[key] != null ? base[key] : 0.4) + 0.03) rum[key] = RUMINATION_WINDOW;
+        }
+      }
       syncDriveOcean(drive, engine);
-      saveState(engine, drive);
-      out({ ok: true, action: 'event', text, tags, ...snapshot(engine, drive) });
+      saveState(engine, drive, rum);
+      out({ ok: true, action: 'event', text, tags, importance, ...snapshot(engine, drive) });
       return;
     }
 
@@ -245,8 +286,10 @@ function main() {
       const { engine, drive } = st;
       const seconds = parseFloat(opts.seconds || '3600');
       drive.tick(seconds);
-      decayEmotions(engine, seconds);
-      saveState(engine, drive);
+      const rum = st.rumination || {};
+      for (const k of Object.keys(rum)) rum[k] = Math.max(0, (rum[k] || 0) - seconds); // 反刍窗口随真实时间消减
+      decayEmotions(engine, seconds, rum);
+      saveState(engine, drive, rum);
       out({ ok: true, action: 'tick', seconds, ...snapshot(engine, drive) });
       return;
     }
@@ -265,7 +308,7 @@ function main() {
         return;
       }
       drive.satisfy(driveName, amount);
-      saveState(engine, drive);
+      saveState(engine, drive, st.rumination || {});
       out({ ok: true, action: 'satisfy', drive: driveName, amount, ...snapshot(engine, drive) });
       return;
     }
@@ -277,7 +320,9 @@ function main() {
       const { engine, drive } = st;
       const seconds = parseFloat(opts.seconds || '3600');
       drive.tick(seconds);
-      decayEmotions(engine, seconds);
+      const rum = st.rumination || {};
+      for (const k of Object.keys(rum)) rum[k] = Math.max(0, (rum[k] || 0) - seconds); // 反刍窗口随真实时间消减
+      decayEmotions(engine, seconds, rum);
       const want = drive.shouldAct(0.5);
       let acted = false;
       if (want.act) {
@@ -287,7 +332,7 @@ function main() {
         syncDriveOcean(drive, engine);
         acted = true;
       }
-      saveState(engine, drive);
+      saveState(engine, drive, rum);
       out({ ok: true, action: 'autostep', seconds, autonomous: { drive: want.drive, action: want.action, acted }, ...snapshot(engine, drive) });
       return;
     }
@@ -311,7 +356,7 @@ function main() {
         engine.triggerEvent({ text: text + '（他想' + want.action + '，你却让他做别的）', emotion_tags: 'longing|confusion' });
       }
       syncDriveOcean(drive, engine);
-      saveState(engine, drive);
+      saveState(engine, drive, st.rumination || {});
       out({ ok: true, action: 'intervene', mode, want: { drive: want.drive, action: want.action, act: want.act }, acted_drive: T, ...snapshot(engine, drive) });
       return;
     }

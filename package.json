@@ -14,8 +14,10 @@
   ],
   "scripts": {
     "start": "node src/server.js",
+    "snapshot": "node src/snapshot-cli.js",
     "demo": "node examples/quickstart.mjs",
     "demo:decay": "node examples/emotion-decay-demo.mjs",
+    "demo:onboarding": "node examples/onboarding.mjs",
     "test": "node test/smoke.test.js && node test/integration.test.js && node test/engine.selftest.js"
   },
   "engines": {

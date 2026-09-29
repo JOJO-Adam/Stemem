@@ -92,9 +92,14 @@ async function main() {
   const betrayal = await runBridge("event", { text: "被最信任的人背叛了", tags: "betrayal" });
   const beforeNeg = negIntensity(betrayal);
   assert(beforeNeg != null && beforeNeg >= 0.35, "背叛事件浮现负面复合情绪 (≥0.35)");
+  // 小时级回落（per-emotion TAU，反刍窗口 3600s 刚过即正常衰减）：1 小时后负面情绪已显著下降，
+  // 证明不是旧版「按 1 天 TAU 黏着」——这是 09-30 科学校准的回归护栏。
+  const hourDecay = await runBridge("tick", { seconds: 3600 });
+  const afterHour = negIntensity(hourDecay);
+  assert(afterHour === undefined || afterHour < beforeNeg - 0.05, "tick 1 小时后负面情绪显著回落（per-emotion TAU，小时级非天级）");
   const decayed = await runBridge("tick", { seconds: 86400 * 10 });
   const afterNeg = negIntensity(decayed);
-  assert(afterNeg === undefined || afterNeg < beforeNeg - 0.05, "tick 10 天后负面情绪显著回落（时间衰减生效，不永久黏着）");
+  assert(afterNeg === undefined || afterNeg < beforeNeg - 0.05, "tick 10 天后负面情绪完全回落（不永久黏着）");
 
   console.log(`\n结果：${passed} 通过 / ${failed} 失败`);
   process.exit(failed === 0 ? 0 : 1);

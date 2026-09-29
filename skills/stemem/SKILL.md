@@ -21,6 +21,10 @@ description_en: "Local-first, zero-egress identity runtime for agents (MCP serve
 ## 1. 启用（接入 WorkBuddy MCP）
 本 Skill 是 Stemem 的 WorkBuddy 入口；真正能力在 MCP server。把下面条目合并进 `~/.workbuddy/mcp.json` 的 `mcpServers`：
 
+- 写完后到「连接器管理」里对 `stemem` 点「信任」启用（stdio 本地进程，无网络）。
+- 首跑 `snapshot` 会主动提示新手任务；也可手动跑 `npm run demo:onboarding`（选性格→触发情绪看变声→可跳过），这是普通用户最易被勾住的入口。
+- **宿主自动注入**：不想手维护契约段？`host-hooks/` 提供 Claude Code `UserPromptSubmit` 钩子 + 一次性命令行 `src/snapshot-cli.js`，让宿主每轮自动把身份态塞回模型。详见 `host-hooks/README.md`。
+
 ```json
 {
   "mcpServers": {

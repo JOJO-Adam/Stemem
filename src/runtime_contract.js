@@ -21,7 +21,7 @@ function personalitySummary(ocean = {}, lang = "en") {
   const L = lang === "zh" ? "zh" : "en";
   const order = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"];
   const level = (v) => (v >= 0.55 ? (L === "zh" ? "偏高" : "high") : v <= 0.45 ? (L === "zh" ? "偏低" : "low") : (L === "zh" ? "中等" : "moderate"));
-  return order.map((k) => `${OCEAN_LABELS[L][k]}${level(ocean[k] ?? 0.5)}`).join(L === "zh" ? "，" : ", ");
+  return order.map((k) => `${OCEAN_LABELS[L][k]}${L === "zh" ? "" : " "}${level(ocean[k] ?? 0.5)}`).join(L === "zh" ? "，" : ", ");
 }
 
 // 把一次 snapshot 编译成紧凑的身份态注入串（宿主每轮贴到 system prompt 末尾）。lang 默认 en。

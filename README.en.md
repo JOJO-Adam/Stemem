@@ -1,14 +1,16 @@
 # Stemem
 
-> JOJO&Adam Group's "Identity Layer Runtime" — gives AI personas a **cross-session, drifting, compaction-amnesia-resistant** dynamic personality.
+> JOJO&Adam Group's "Identity Layer Runtime" — gives your AI agent a **living persona that remembers you, shifts its tone with your mood, and survives compaction**.
+
+Does your agent feel like it has amnesia after every restart? Like a hollow shell the longer you talk? Stemem gives any MCP host's agent a **locally-persisted dynamic personality**: it remembers who you are, grows confident when praised, turns cold and blunt when betrayed, and never holds a grudge past its natural fade — **consistent across sessions, compaction, and sub-agents**.
 
 Stemem is a **local-first, zero-egress** MCP (Model Context Protocol) stdio server. It wraps a battle-tested personality computation engine (NeshamaEngine) into 9 MCP tools, letting the host Agent persist a real personality state in a local JSON file instead of hardcoding it into the system prompt.
 
 ## Why it exists
 
-Mainstream personality schemes (like SoulSpec's `soul.json` / `SOUL.md` / `IDENTITY.md`) are **static DOC**: the personality is a one-shot hardcoded snapshot. When the host conversation gets compacted, spans sessions, or coordinates multiple sub-agents, the hardcoded DOC gets forgotten (compaction amnesia) and personality consistency collapses instantly.
+Mainstream personality schemes (like SoulSpec's `soul.json` / `SOUL.md` / `IDENTITY.md`) are **static DOC**: the personality is a one-shot hardcoded snapshot. The consequence: when the conversation gets compacted, spans sessions, or coordinates multiple sub-agents, the hardcoded DOC gets forgotten (compaction amnesia) and the agent collapses back into a personality-less blank slate.
 
-Stemem's fix: **personality state lives in a local file, not in the prompt**; the prompt only carries the instruction of "which tool to call when." Every round, the host calls `snapshot` to re-inject the **current** identity state, so the personality deterministically survives compaction, restarts, and sub-agent switches.
+Stemem's fix: **personality state lives in a local file, not in the prompt**; the prompt only carries the instruction of "which tool to call when." Every round, the host calls `snapshot` to re-inject the **current** identity state, so the personality deterministically survives compaction, restarts, and sub-agent switches. The user-visible payoff: **the agent remembers you, and its tone shifts with your mood.**
 
 The two are complementary: SoulSpec is the static standard; Stemem is the dynamic runtime — `generate_soul` can compile the runtime state into a SoulSpec v0.4 package for distribution via ClawSouls.
 
@@ -89,17 +91,27 @@ node test/engine.selftest.js
 ## See it work (Demos)
 
 ```bash
-# ① Anti-amnesia: after process kill + context compaction, recover full personality state from local disk JSON (impossible with plain SOUL.md)
+# ① Onboarding quest (invited on install): pick a preset persona → trigger emotions to watch it shift tone → skippable anytime. The most perceptible entry point.
+npm run demo:onboarding
+
+# ② Anti-amnesia: after process kill + context compaction, recover full personality state from local disk JSON (impossible with plain SOUL.md)
 node examples/antiamnesia-demo.mjs
 
-# ② Forced-injection harness: host 3-line loop preTurn→inject→postTurn makes the persona layer feel alive on install
+# ③ Forced-injection harness: host 3-line loop preTurn→inject→postTurn makes the persona layer feel alive on install
 node examples/harness-demo.mjs
 
-# ③ Tone drifts with emotion (most perceptible): same personality baseline, 4 situations → night-and-day tone divergence
+# ④ Tone drifts with emotion (most perceptible): same personality baseline, 4 situations → night-and-day tone divergence
 node examples/tone-demo.mjs
+
+# ⑤ Emotion time-decay (scientifically calibrated): praised fades in minutes; betrayed (high-importance) lingers a bit longer but never overnight
+node examples/emotion-decay-demo.mjs
 ```
 
-`examples/tone-demo.mjs` is the most direct: praised→pride (warm, direct, slightly showy) / betrayed→anger (cold, blunt, can be edgy) / failed→loneliness (slows down) / celebrated→pride. This is the part users perceive most.
+`npm run demo:onboarding` is the most direct: pick Adam → praised surfaces "pride" (warm, direct) / betrayed surfaces "anger" (cold, blunt, can be edgy) — watch the agent's tone shift with you. This is the part ordinary users get hooked on in the first week.
+
+## Host auto-injection (host-hooks)
+
+Don't want to hand-maintain the contract in your system prompt? `host-hooks/` ships a Claude Code `UserPromptSubmit` hook (auto-injects the identity state as context every turn) plus a one-shot CLI `src/snapshot-cli.js` (any shell / CI / other host). See [`host-hooks/README.md`](./host-hooks/README.md).
 
 ## Intellectual Property (IP) ownership
 
