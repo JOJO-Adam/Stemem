@@ -75,11 +75,15 @@ The repo ships with a WorkBuddy Skill (`skills/stemem/SKILL.md`) that connects S
 
 ```bash
 npm test
-# or
+# runs in order: smoke (9/9) → integration (full 9-tool) → engine selftest (engine behavior)
 node test/smoke.test.js
+node test/integration.test.js
+node test/engine.selftest.js
 ```
 
-Smoke test covers: initialize → tools/list (9 tools) → init/event/tick/snapshot/generate_soul calls → `inject_prompt` injection string → **cross-process deterministic personality-state recovery**.
+- **smoke**: initialize → tools/list (9 tools) → init/event/tick/snapshot/generate_soul → `inject_prompt` injection string → **cross-process deterministic personality-state recovery**.
+- **integration**: a real MCP stdio client driving **all 9 tools** (incl. satisfy / autostep / intervene / status), verifying the runtime contract (snapshot injection, event-driven evolution, cross-restart determinism).
+- **engine selftest**: drives the vendored `seele_bridge` directly, verifying NeshamaEngine personality lock (OCEAN∈[0,1]), drive urgency, satisfaction loop, serialize round-trip, autonomous behavior / intervention.
 
 ## Intellectual Property (IP) ownership
 

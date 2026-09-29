@@ -35,3 +35,4 @@
 - [x] WorkBuddy Skill 封装。**（skills/stemem/SKILL.md，已受跟踪进仓库；原 .workbuddy/ 被 gitignore 故迁出）**
 - [x] Adam persona SoulSpec 包。**（clawsouls/adam/，OCEAN=Adam 基线，已随仓库推送）**
 - [x] 本地 mcp.json 注册 stemem。**（待 WorkBuddy「连接器管理」点信任启用）**
+- [x] 测试套件（smoke + integration + engine selftest）全绿。**（共 44 断言，npm test 一键跑通；integration 驱动全部 9 工具 + 引擎层自测，覆盖「真实 MCP 宿主集成测试」与「Seele selftests 移植」两项缺口）**

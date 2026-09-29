@@ -75,11 +75,15 @@ npx stemem
 
 ```bash
 npm test
-# 或
+# 依次跑：smoke（9/9）→ integration（9 工具完整集成）→ engine selftest（引擎层行为）
 node test/smoke.test.js
+node test/integration.test.js
+node test/engine.selftest.js
 ```
 
-冒烟测试覆盖：initialize → tools/list（9 工具）→ init/event/tick/snapshot/generate_soul 调用 → `inject_prompt` 注入串 → **跨进程确定性恢复人格态**。
+- **smoke**：initialize → tools/list（9 工具）→ init/event/tick/snapshot/generate_soul → `inject_prompt` 注入串 → **跨进程确定性恢复人格态**。
+- **integration**：真实 MCP stdio 客户端驱动**全部 9 工具**（含 satisfy / autostep / intervene / status），校验运行时契约（snapshot 注入串、event 演化、跨重启确定性）。
+- **engine selftest**：直接驱动 vendored `seele_bridge`，验证 NeshamaEngine 性格锁（OCEAN∈[0,1]）、驱力紧迫、满足闭环、序列化往返、自主行为 / 干预。
 
 ## 知识产权（IP）归属
 

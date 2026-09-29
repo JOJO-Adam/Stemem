@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "start": "node src/server.js",
-    "test": "node test/smoke.test.js"
+    "test": "node test/smoke.test.js && node test/integration.test.js && node test/engine.selftest.js"
   },
   "engines": {
     "node": ">=18"
