@@ -77,6 +77,12 @@ node test/smoke.test.js
 
 冒烟测试覆盖：initialize → tools/list（9 工具）→ init/event/tick/snapshot/generate_soul 调用 → `inject_prompt` 注入串 → **跨进程确定性恢复人格态**。
 
+## WorkBuddy Skill
+
+仓库自带一个 WorkBuddy Skill（`skills/stemem/SKILL.md`），把 Stemem 作为 MCP server 接入 WorkBuddy：含 `mcp.json` 接入片段、每轮运行时契约、9 工具表。把该 Skill 导入 WorkBuddy（或直接把 `stemem` 配进 `~/.workbuddy/mcp.json` 的 `mcpServers`）即可启用；首次需在「连接器管理」对 `stemem` 点「信任」。
+
+---
+
 ## 知识产权（IP）归属
 
 - **NeshamaEngine（`neshama_engine.js`）**：人格计算引擎真源，IP 归 **JOJO / Neshama**（资本 Neshama 消费产品，neshama.cn）。本仓库仅引用，不复制。
