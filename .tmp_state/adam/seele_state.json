@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "updated_at": "2026-09-29T12:51:14.747Z",
+  "engine": {
+    "version": 2,
+    "ocean": {
+      "openness": 0.78,
+      "conscientiousness": 0.55,
+      "extraversion": 0.34,
+      "agreeableness": 0.26,
+      "neuroticism": 0.62
+    },
+    "emotions": {
+      "joy": 0.4,
+      "sadness": 0.3,
+      "anger": 0.3,
+      "fear": 0.3,
+      "surprise": 0.3,
+      "disgust": 0.2,
+      "anticipation": 0.4,
+      "satisfaction": 0.4,
+      "achievement": 0.3,
+      "trust": 0.5
+    },
+    "drives": {
+      "survival": 0.5,
+      "safety": 0.5,
+      "belonging": 0.5,
+      "glory": 0.5,
+      "honor": 0.5,
+      "esteem": 0.5,
+      "revenge": 0.5,
+      "loyalty": 0.5,
+      "self_actualization": 0.5
+    },
+    "baseline_emotions": {
+      "joy": 0.4,
+      "sadness": 0.3,
+      "anger": 0.3,
+      "fear": 0.3,
+      "surprise": 0.3,
+      "disgust": 0.2,
+      "anticipation": 0.4,
+      "satisfaction": 0.4,
+      "achievement": 0.3,
+      "trust": 0.5
+    },
+    "baseline_ocean": {
+      "openness": 0.78,
+      "conscientiousness": 0.55,
+      "extraversion": 0.34,
+      "agreeableness": 0.26,
+      "neuroticism": 0.62
+    },
+    "history": [],
+    "active_emotions": [],
+    "emotion_log": [],
+    "ocean_history": [
+      {
+        "age": 0,
+        "ocean": {
+          "openness": 0.78,
+          "conscientiousness": 0.55,
+          "extraversion": 0.34,
+          "agreeableness": 0.26,
+          "neuroticism": 0.62
+        }
+      }
+    ]
+  },
+  "drive": {
+    "ocean": {
+      "openness": 0.78,
+      "conscientiousness": 0.55,
+      "extraversion": 0.34,
+      "agreeableness": 0.26,
+      "neuroticism": 0.62
+    },
+    "profile": {
+      "survival": 20,
+      "safety": 20,
+      "belonging": 20,
+      "esteem": 20,
+      "self_actualization": 20
+    },
+    "emotions": [],
+    "drives": {
+      "survival": {
+        "satisfaction": 0.5,
+        "base_urgency_rate": 0.015,
+        "urgency": 0,
+        "weight": 1.5,
+        "effective_weight": 1.0499999999999998,
+        "utility": 0,
+        "time_since_satisfied": 0,
+        "cumulative_satisfaction": 0.5
+      },
+      "safety": {
+        "satisfaction": 0.5,
+        "base_urgency_rate": 0.01,
+        "urgency": 0,
+        "weight": 1.3,
+        "effective_weight": 0.9099999999999999,
+        "utility": 0,
+        "time_since_satisfied": 0,
+        "cumulative_satisfaction": 0.5
+      },
+      "belonging": {
+        "satisfaction": 0.5,
+        "base_urgency_rate": 0.008,
+        "urgency": 0,
+        "weight": 1.1,
+        "effective_weight": 0.77,
+        "utility": 0,
+        "time_since_satisfied": 0,
+        "cumulative_satisfaction": 0.5
+      },
+      "esteem": {
+        "satisfaction": 0.5,
+        "base_urgency_rate": 0.005,
+        "urgency": 0,
+        "weight": 0.9,
+        "effective_weight": 0.63,
+        "utility": 0,
+        "time_since_satisfied": 0,
+        "cumulative_satisfaction": 0.5
+      },
+      "self_actualization": {
+        "satisfaction": 0.5,
+        "base_urgency_rate": 0.003,
+        "urgency": 0,
+        "weight": 0.7,
+        "effective_weight": 0.48999999999999994,
+        "utility": 0,
+        "time_since_satisfied": 0,
+        "cumulative_satisfaction": 0.5
+      }
+    }
+  }
+}

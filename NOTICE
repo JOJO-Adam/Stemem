@@ -1,0 +1,39 @@
+Stemem —— 知识产权（IP）归属声明
+====================================
+
+本项目（Stemem 身份层运行时）由 **JOJO&Adam 集团** 出品，采用 MIT 许可证（见 LICENSE）。
+但本仓库包含与分发的**代码资产来自不同主体**，特此声明，避免混淆：
+
+1. 人格计算引擎 NeshamaEngine（neshama_engine.js）
+   -------------------------------------------------
+   - 来源：资本「Neshama」消费产品项目（neshama.cn），位于
+     /Users/jojo/AI_Projects/Neshama/Neshama_Sim/neshama_engine.js
+   - IP 归属：JOJO / Neshama
+   - 在本仓库中的状态：**仅引用，不复制**。本仓库 engine_client.js 通过
+     环境变量（NESHAMA_ENGINE）与候选路径指向该真源，不持有引擎代码本身。
+   - 该引擎的许可证由其原项目决定，不受本仓库 MIT 许可证覆盖。
+
+2. 运行时产品（Stemem）
+   --------------------
+   - 范围：本仓库全部 src/ 模块（server.js / engine_client.js /
+     runtime_contract.js / soulspec.js）、设计文档（设计要点.md /
+     PROJECT_CONTEXT.md）、测试（test/）、MCP 封装与文档。
+   - IP 归属：JOJO&Adam 集团。
+   - 许可证：MIT（见 LICENSE）。
+
+3. Seele 引擎桥（seele_bridge.js）
+   ---------------------------------
+   - 来源：JOJO 的 Seele 项目，位于
+     /Users/jojo/AI_Projects/Seele/engine/seele_bridge.js
+   - IP 归属：JOJO / Seele
+   - 在本仓库中的状态：**仅引用，不复制**（通过 SEELE_BRIDGE 环境变量
+     与候选路径指向真源）。
+
+4. SoulSpec 兼容性
+   ----------------
+   - generate_soul 导出的 soul.json / SOUL.md / IDENTITY.md 遵循
+     SoulSpec v0.4 静态 DOC 标准（第三方标准），用于进 ClawSouls 分发。
+   - SoulSpec 标准本身由 soul-spec-mcp 社区维护，与本仓库 MIT 许可互不冲突。
+
+—— 分发前请确保：引擎真源（NeshamaEngine / Seele 桥）已按上述方式
+    vendored 进本仓库 engine/ 子目录，或接收方已知晓引用路径要求。

@@ -1,0 +1,8 @@
+# Stemem 开源发布忽略项
+.workbuddy/
+.env
+*.log
+.DS_Store
+*.state.json
+.stemem/
+node_modules/
