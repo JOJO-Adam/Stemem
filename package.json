@@ -15,6 +15,7 @@
   "scripts": {
     "start": "node src/server.js",
     "demo": "node examples/quickstart.mjs",
+    "demo:decay": "node examples/emotion-decay-demo.mjs",
     "test": "node test/smoke.test.js && node test/integration.test.js && node test/engine.selftest.js"
   },
   "engines": {

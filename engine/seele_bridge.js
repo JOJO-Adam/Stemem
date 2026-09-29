@@ -123,6 +123,33 @@ function computeMoodSurface(engine) {
   return surfaced;
 }
 
+// ---------- 情绪时间衰减（Seele 校准层） ----------
+// 解决「压缩免疫的反面诅咒」：状态永不忘 = 负面态永不忘 → 否则会和一个永久阴阳怪气的
+// agent 共事到疯。Neshama 真源只在 triggerEvent 时按事件衰减 0.15，但 tick（时间流逝）
+// 不触发事件 → 空闲期情绪冻结、永不回落。这里在 tick/autostep 时按经过秒数做指数衰减，
+// 把 engine.emotions 拉回 baseline_emotions。时间常数 TAU≈1 天：单次负面遭遇约 1–2 天退场，
+// 重度(×3)约 3 天；正情绪同样回落（狂喜也会平复）。纯状态层松弛——不中断工作、不需批准、
+// 不调漫游，不碰「情绪≠工作表现」护栏（09-29 JOJO 决策：做衰减，不做"请假去漫游"）。
+const EMOTION_DECAY_TAU = 86400; // 秒，1 天时间常数（Seele 自校准旋钮，同 SEELE_EMOTION_THRESHOLD）
+
+function clamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+function decayEmotions(engine, seconds) {
+  const emo = engine.emotions || {};
+  const base = engine.baseline_emotions || {};
+  // k = 1 - e^(-t/TAU)：已衰减比例（越大越靠近基线）。t=0 → k=0（不动），t≫TAU → k→1（落基线）
+  const k = 1 - Math.exp(-Math.max(0, Number(seconds) || 0) / EMOTION_DECAY_TAU);
+  if (k <= 0) return;
+  for (const key of Object.keys(emo)) {
+    const b = base[key] != null ? base[key] : 0.4;
+    const cur = emo[key] || 0;
+    // new = cur·(1−k) + b·k：向基线移动 k 比例，绝不越过基线（clamp 与 Neshama 一致）
+    emo[key] = clamp(cur * (1 - k) + b * k, 0.05, 0.95);
+  }
+}
+
 // ---------- 快照（对外 JSON） ----------
 // 全部经由 DriveBus 稳定 API 取数（getDominant / getProfile / getSatisfaction / getEmotion
 // / getRanking / shouldAct），不再依赖 behaviorHint 并行表示（D-G8：单一真源）。
@@ -218,6 +245,7 @@ function main() {
       const { engine, drive } = st;
       const seconds = parseFloat(opts.seconds || '3600');
       drive.tick(seconds);
+      decayEmotions(engine, seconds);
       saveState(engine, drive);
       out({ ok: true, action: 'tick', seconds, ...snapshot(engine, drive) });
       return;
@@ -249,6 +277,7 @@ function main() {
       const { engine, drive } = st;
       const seconds = parseFloat(opts.seconds || '3600');
       drive.tick(seconds);
+      decayEmotions(engine, seconds);
       const want = drive.shouldAct(0.5);
       let acted = false;
       if (want.act) {

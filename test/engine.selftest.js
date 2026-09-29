@@ -83,6 +83,19 @@ async function main() {
   const au = await runBridge("autostep", { seconds: 3600 });
   assert(au.ok === true && typeof au.autonomous.acted === "boolean", "autostep 返回 autonomous.acted");
 
+  // 情绪时间衰减：负面态随 tick 向基线回落（解决"永久阴阳怪气 agent"）
+  const NEG = new Set(["betrayal", "anger", "shame", "contempt", "fear", "sadness", "背叛感", "愤怒", "羞耻", "蔑视", "恐惧", "悲伤"]);
+  const negIntensity = (s) => {
+    const a = (s.active_emotions || []).find((e) => NEG.has(e.name));
+    return a ? a.intensity : undefined;
+  };
+  const betrayal = await runBridge("event", { text: "被最信任的人背叛了", tags: "betrayal" });
+  const beforeNeg = negIntensity(betrayal);
+  assert(beforeNeg != null && beforeNeg >= 0.35, "背叛事件浮现负面复合情绪 (≥0.35)");
+  const decayed = await runBridge("tick", { seconds: 86400 * 10 });
+  const afterNeg = negIntensity(decayed);
+  assert(afterNeg === undefined || afterNeg < beforeNeg - 0.05, "tick 10 天后负面情绪显著回落（时间衰减生效，不永久黏着）");
+
   console.log(`\n结果：${passed} 通过 / ${failed} 失败`);
   process.exit(failed === 0 ? 0 : 1);
 }
