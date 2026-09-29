@@ -1,5 +1,6 @@
 # Stemem 开源发布忽略项
 .workbuddy/
+.tmp_state/
 .env
 *.log
 .DS_Store
