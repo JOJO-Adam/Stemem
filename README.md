@@ -12,7 +12,7 @@ Stemem 是一个 **本地优先、零出站** 的 MCP（Model Context Protocol�
 
 Stemem 的解法：**人格态存本地文件，不在 prompt**；prompt 只放「何时调哪个工具」的指令。每轮宿主调用 `snapshot` 把**当前**身份态重注入，人格因此跨压缩、跨重启、跨子 Agent 确定性存活。对用户的直观感受就是：**这个 Agent 记得你，而且会随遭遇变声**。
 
-两者互补：SoulSpec 做静态标准，Stemem 做动态运行时——`generate_soul` 还能把运行时态编译成 SoulSpec v0.4 包进 ClawSouls 分发。
+两者互补：SoulSpec 做静态标准，Stemem 做动态运行时——`generate_soul` 还能把运行时态编译成 SoulSpec v0.5 包进 ClawSouls 分发。
 
 ## 核心特性
 
@@ -35,6 +35,21 @@ stemem
 
 # npx 一次性
 npx stemem
+```
+
+### MCP 客户端配置（Server config）
+
+把下面这段加进任意 MCP 宿主的配置文件（Claude Desktop / Cursor / VS Code / WorkBuddy 等），宿主即识别为 `stemem` 工具集；首次需在宿主的「连接器管理」对 `stemem` 点「信任」。
+
+```json
+{
+  "mcpServers": {
+    "stemem": {
+      "command": "npx",
+      "args": ["-y", "stemem"]
+    }
+  }
+}
 ```
 
 > **仓库已自包含**：人格引擎（NeshamaEngine）与 Seele 驱力桥已 **vendored 进 `engine/`**（CommonJS，经 `engine/package.json` 声明），`clone` 后无需配置 `NESHAMA_ENGINE` / `SEELE_BRIDGE` 即可直接运行。
@@ -60,7 +75,7 @@ npx stemem
 | `autostep` | 自主行为推进（玩家不干预也活） | 需要自主行为时 |
 | `intervene` | 人工干预（顺/逆驱力塑造） | 想刻意塑造人格时 |
 | `status` | 完整状态检视（调试） | 调试 |
-| `generate_soul` | 导出 SoulSpec v0.4 包 | 要分发人格时 |
+| `generate_soul` | 导出 SoulSpec v0.5 包 | 要分发人格时 |
 
 ## 运行时契约（宿主侧）
 
