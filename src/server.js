@@ -87,13 +87,16 @@ const TOOLS = [
   },
 ];
 
-// 首跑提示：状态尚未初始化时，在 snapshot/status 注入新手任务提示，让宿主每轮都能邀请用户玩一次。
+// 首跑提示：状态尚未初始化（isFirstRun）时，在 snapshot/status 注入新手任务提示，让宿主每轮都能邀请用户玩一次。
 // 这是「装上即被邀请」的轻量实现（stdio MCP 无法弹宿主 UI，但能往 prompt 里塞提示）。
+// 注意：isFirstRun 在 init 创建状态文件后即变 false，所以邀请只在「真正首跑」出现一次，init 后自动消失。
 function maybeOnboarding(result) {
-  if (result && result.ok && isFirstRun(AGENT_ID)) {
-    result.onboarding_available = true;
-    if (typeof result.inject_prompt === "string") result.inject_prompt += "\n\n" + firstRunHint();
-    else result.onboarding_hint = firstRunHint();
+  if (isFirstRun(AGENT_ID)) {
+    const r = result && typeof result === "object" ? result : {};
+    r.onboarding_available = true;
+    if (typeof r.inject_prompt === "string") r.inject_prompt += "\n\n" + firstRunHint();
+    else r.onboarding_hint = firstRunHint();
+    return r;
   }
   return result;
 }
@@ -131,7 +134,7 @@ async function dispatch(name, args = {}) {
     }
     case "snapshot": {
       const d = await callBridge("status", {}, AGENT_ID);
-      if (!d.ok) return d;
+      if (!d.ok) return maybeOnboarding({ ok: false, error: d.error });
       const lang = args.lang || process.env.STEMEM_TONE_LANG || "en";
       const result = {
         ocean: d.ocean,

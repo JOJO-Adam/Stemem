@@ -98,6 +98,7 @@ const I18N = {
     workGuard: "这只约束你「怎么说」，绝不约束你「做不做、做多好」。任务必须做完、做对、该决断就决断——情绪再差，活照样干。",
     toneLabel: "语气指令（情绪=",
     intensityLabel: " 强度",
+    undertone: "情绪底色：",
   },
   en: {
     header: "[Tone · drifts with emotion each turn]",
@@ -107,6 +108,7 @@ const I18N = {
     workGuard: "This only governs *how you say it* — never *whether or how well you do the work*. The task still gets finished, correct, and decided. Mood never excuses dropping the ball.",
     toneLabel: "Tone directive (emotion=",
     intensityLabel: " intensity",
+    undertone: "Emotional undertone: ",
   },
 };
 
@@ -168,7 +170,7 @@ function renderPrompt({ emotion, intensity, dims, edge, note, lang }) {
       `${w.humor[0](dims.humor)}；` +
       `${w.formality[0](dims.formality)}。`
   );
-  parts.push(`情绪底色：${note}。`);
+  parts.push(`${i.undertone}${note}${lang === "zh" ? "。" : "."}`);
   parts.push(edge ? i.edge : i.kind);
   parts.push(i.shift);
   parts.push(i.workGuard);
