@@ -4,11 +4,16 @@
   "description": "Stemem — local-first identity-layer runtime for AI agents (MCP server). JOJO&Adam group product. Lets any MCP host give an agent a personality that grows across sessions and survives context compaction.",
   "type": "module",
   "bin": {
-    "stemem-mcp": "./src/server.js"
+    "stemem": "./src/server.js"
   },
   "files": [
     "src",
+    "engine",
+    "host-hooks",
+    "skills",
+    "examples",
     "README.md",
+    "README.en.md",
     "LICENSE",
     "NOTICE"
   ],
@@ -30,7 +35,19 @@
     "identity",
     "memory",
     "soulspec",
-    "local-first"
+    "local-first",
+    "emotion",
+    "tone"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "author": "JOJO&Adam",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JOJO-Adam/Stemem"
+  },
+  "homepage": "https://github.com/JOJO-Adam/Stemem#readme",
+  "bugs": {
+    "url": "https://github.com/JOJO-Adam/Stemem/issues"
+  },
+  "mcpName": "io.github.JOJO-Adam/stemem"
 }

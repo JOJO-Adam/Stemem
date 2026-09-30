@@ -29,9 +29,9 @@ Stemem 的解法：**人格态存本地文件，不在 prompt**；prompt 只放�
 # 直接跑（需本机已装 Node >= 18）
 node src/server.js
 
-# 或作为命令（package.json 注册了 bin: stemem-mcp）
+# 或作为命令（package.json 注册了 bin: stemem）
 npm install -g stemem
-stemem-mcp
+stemem
 
 # npx 一次性
 npx stemem

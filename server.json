@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.JOJO-Adam/stemem",
+  "title": "Stemem Identity Runtime",
+  "description": "Local-first agent persona runtime (MCP): cross-session personality that survives compaction.",
+  "websiteUrl": "https://github.com/JOJO-Adam/Stemem",
+  "repository": {
+    "url": "https://github.com/JOJO-Adam/Stemem",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "stemem",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

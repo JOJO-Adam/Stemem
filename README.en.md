@@ -29,9 +29,9 @@ The two are complementary: SoulSpec is the static standard; Stemem is the dynami
 # Run directly (Node >= 18 on host)
 node src/server.js
 
-# Or as a command (package.json registers bin: stemem-mcp)
+# Or as a command (package.json registers bin: stemem)
 npm install -g stemem
-stemem-mcp
+stemem
 
 # One-shot via npx
 npx stemem
