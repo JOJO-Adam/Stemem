@@ -7,3 +7,4 @@
 *.state.json
 .stemem/
 node_modules/
+dist/
