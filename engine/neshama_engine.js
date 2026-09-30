@@ -2,6 +2,9 @@
  * Neshama JS Engine v1.0
  * OCEAN 人格 + 复合情绪 + 驱力系统 + 性格锁
  */
+// SPDX-License-Identifier: MIT
+// JavaScript port/derivative of Neshama Soul Engine (MIT, Copyright (c) 2026 Neshama AI — gitee.com/neshama_ai/neshama).
+// Redistributed under MIT per upstream license terms.
 
 // ========== OCEAN 人格 ==========
 const OCEAN_DIMS = ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism'];

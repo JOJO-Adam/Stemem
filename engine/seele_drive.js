@@ -15,6 +15,9 @@
  *
  * 关系：profile 偏置 effective_weight（高 profile → 该驱力更显眼）；satisfy 可缓回写 profile（人格漂移）。
  */
+// SPDX-License-Identifier: MIT
+// Drive design derived from Neshama (JOJO IP). Originally part of the Seele project (AGPL-3.0, Copyright (c) 2026 JOJO & Adam).
+// Relicensed to MIT for the Stemem repository by the sole copyright holder.
 
 const DRIVES = ['survival', 'safety', 'belonging', 'esteem', 'self_actualization'];
 

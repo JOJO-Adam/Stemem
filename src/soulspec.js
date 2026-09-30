@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 // soulspec.js — 导出 SoulSpec v0.5 包（soul.json + SOUL.md + IDENTITY.md + AGENTS.md + STYLE.md + HEARTBEAT.md + README.md）。
 //
 // SoulSpec 做「静态人格 DOC 标准」；Stemem 做「动态运行时」。两者互补：本工具把当前

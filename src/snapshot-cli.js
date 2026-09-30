@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: MIT
 // snapshot-cli.js — Stemem 一次性快照命令行（宿主 hook / 脚本用）。
 //
 // 与 src/server.js 的 snapshot 工具产出完全一致，但**单进程一次性**：拉起 → 读/建状态 →

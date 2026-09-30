@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: MIT
 // server.js — Stemem MCP server（hand-rolled stdio，零依赖，本地优先零出站）。
 //
 // 为什么 hand-roll：MCP stdio 协议是 JSON-RPC 2.0 换行分隔，标准且简单；零依赖让本服务

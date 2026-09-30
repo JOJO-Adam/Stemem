@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 // engine_client.js — 调用 Seele 引擎桥（seele_bridge.js，CLI 形态）的子进程封装。
 //
 // NeshamaEngine 已 vendored 进 engine/（IP 见 NOTICE，非引用不复制）。本文件通过

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 // onboarding.js — 新手任务（onboarding quest）数据与逻辑层。
 //
 // 解决「普通 Agent 用户装上 Stemem 第一周不被勾住」的产品缺口（09-30 JOJO 提案）：

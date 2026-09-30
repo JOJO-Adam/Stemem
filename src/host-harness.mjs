@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 // host-harness.mjs — 宿主集成参考实现（ESM）。
 //
 // 这是「用户装上 Stemem 能否感知到」的临门一脚：MCP 连通只给了 9 个工具，

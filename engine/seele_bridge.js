@@ -13,6 +13,9 @@
  *             2. 相对本文件的 ../../Neshama/Neshama_Sim/neshama_engine.js（同机 Neshama 项目）
  *             （已 vendored 进 Stemem/engine/，正常情况下由环境变量注入，无需兜底）
  */
+// SPDX-License-Identifier: MIT
+// Originally part of the Seele project (AGPL-3.0, Copyright (c) 2026 JOJO & Adam).
+// Relicensed to MIT for the Stemem repository by the sole copyright holder.
 
 const fs = require('fs');
 const path = require('path');

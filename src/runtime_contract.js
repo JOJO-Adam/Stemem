@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 // runtime_contract.js — 「每轮运行时契约」辅助（详见 设计要点.md §10.3）。
 //
 // 核心思想：人格态存本地 JSON、不在 prompt；prompt 只放「何时调哪个工具」的指令。
