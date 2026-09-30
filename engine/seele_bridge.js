@@ -187,6 +187,7 @@ function decayEmotions(engine, seconds, rumination) {
 // 全部经由 DriveBus 稳定 API 取数（getDominant / getProfile / getSatisfaction / getEmotion
 // / getRanking / shouldAct），不再依赖 behaviorHint 并行表示（D-G8：单一真源）。
 function snapshot(engine, drive) {
+  drive.ensureFresh(); // 惰性重算：seele_drive 改为 dirty 标记后，直接读 drive.drives[x].utility 前必须确保新鲜
   const dom = drive.getDominant();
   const domUtil = Math.round(drive.drives[dom].utility * 1000) / 1000;
   const sa = drive.shouldAct(0.5);

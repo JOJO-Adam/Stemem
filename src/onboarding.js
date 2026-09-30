@@ -57,6 +57,23 @@ export function isFirstRun(agentId) {
   }
 }
 
+// 首跑提示注入：状态尚未初始化（isFirstRun）时，往 snapshot 结果里塞新手任务提示，
+// 让宿主每轮都能邀请用户玩一次。抽离到本模块，供 server.js 与 snapshot.js 共用，
+// 避免两处各自复制同一段注入逻辑而漂移。
+// 注意：isFirstRun 在 init 创建状态文件后即变 false，所以提示只在「真正首跑」出现一次，
+// init 后自动消失。
+export function maybeOnboarding(result, agentId) {
+  if (!result) return result;
+  if (isFirstRun(agentId)) {
+    const r = typeof result === "object" ? result : {};
+    r.onboarding_available = true;
+    if (typeof r.inject_prompt === "string") r.inject_prompt += "\n\n" + firstRunHint();
+    else r.onboarding_hint = firstRunHint();
+    return r;
+  }
+  return result;
+}
+
 // 注入宿主 prompt / 打印的提示串（首跑时）。技术宅不爱废话——一行带过 + 可跳过。
 export function firstRunHint() {
   return (

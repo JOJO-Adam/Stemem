@@ -7,10 +7,10 @@
 // 若日后要换官方 @modelcontextprotocol/sdk，只需把下面协议层替换为 SDK 的
 // McpServer/StdioServerTransport，dispatch() 与工具表保持不变。
 import { callBridge } from "./engine_client.js";
-import { formatSnapshotPrompt, contractPrompt, shouldTriggerEvent } from "./runtime_contract.js";
-import { isFirstRun, firstRunHint } from "./onboarding.js";
-import { toneProfile } from "./tone.js";
+import { shouldTriggerEvent } from "./runtime_contract.js";
+import { maybeOnboarding } from "./onboarding.js";
 import { generateSoul } from "./soulspec.js";
+import { buildSnapshot } from "./snapshot.js";
 
 const AGENT_ID = process.env.STEMEM_AGENT_ID || "default";
 const PROTOCOL_VERSION = "2024-11-05";
@@ -88,19 +88,8 @@ const TOOLS = [
   },
 ];
 
-// 首跑提示：状态尚未初始化（isFirstRun）时，在 snapshot/status 注入新手任务提示，让宿主每轮都能邀请用户玩一次。
-// 这是「装上即被邀请」的轻量实现（stdio MCP 无法弹宿主 UI，但能往 prompt 里塞提示）。
-// 注意：isFirstRun 在 init 创建状态文件后即变 false，所以邀请只在「真正首跑」出现一次，init 后自动消失。
-function maybeOnboarding(result) {
-  if (isFirstRun(AGENT_ID)) {
-    const r = result && typeof result === "object" ? result : {};
-    r.onboarding_available = true;
-    if (typeof r.inject_prompt === "string") r.inject_prompt += "\n\n" + firstRunHint();
-    else r.onboarding_hint = firstRunHint();
-    return r;
-  }
-  return result;
-}
+// 首跑提示注入由 src/onboarding.js 的 maybeOnboarding 统一处理（server.js 与 snapshot.js 共用），
+// 此处不再重复实现。snapshot/status 工具调用时按需注入新手任务提示。
 
 // ---------- 分发（工具实现，包裹 seele_bridge CLI） ----------
 async function dispatch(name, args = {}) {
@@ -134,19 +123,9 @@ async function dispatch(name, args = {}) {
       );
     }
     case "snapshot": {
-      const d = await callBridge("status", {}, AGENT_ID);
-      if (!d.ok) return maybeOnboarding({ ok: false, error: d.error });
       const lang = args.lang || process.env.STEMEM_TONE_LANG || "en";
-      const result = {
-        ocean: d.ocean,
-        top_emotion: d.top_emotion,
-        active_emotions: d.active_emotions,
-        personality: d.personality,
-        drive: d.drive,
-        tone: toneProfile(d, lang),
-        inject_prompt: formatSnapshotPrompt(d, lang),
-      };
-      return maybeOnboarding(result);
+      // buildSnapshot 为 server 与 CLI 共用的单一真源；首跑提示由 maybeOnboarding 注入。
+      return maybeOnboarding(await buildSnapshot(AGENT_ID, lang), AGENT_ID);
     }
     case "autostep": {
       const opts = {};
@@ -162,7 +141,7 @@ async function dispatch(name, args = {}) {
     }
     case "status": {
       const r = await callBridge("status", {}, AGENT_ID);
-      return maybeOnboarding(r);
+      return maybeOnboarding(r, AGENT_ID);
     }
     case "generate_soul": {
       const r = await generateSoul(args.target_dir || ".", AGENT_ID);

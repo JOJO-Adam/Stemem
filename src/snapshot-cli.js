@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: MIT
 // snapshot-cli.js — Stemem 一次性快照命令行（宿主 hook / 脚本用）。
 //
-// 与 src/server.js 的 snapshot 工具产出完全一致，但**单进程一次性**：拉起 → 读/建状态 →
-// 输出 inject_prompt → 退出。不维持长连接，专为「宿主每轮自动注入」的 hook 场景设计
-// （Claude Code UserPromptSubmit hook / CI / 任意 shell 调用）。
+// 与 src/server.js 的 snapshot 工具产出完全一致（共用 src/snapshot.js 的 buildSnapshot 单一真源），
+// 但**单进程一次性**：拉起 → 读/建状态 → 输出 inject_prompt → 退出。不维持长连接，
+// 专为「宿主每轮自动注入」的 hook 场景设计（Claude Code UserPromptSubmit hook / CI / 任意 shell 调用）。
 //
 // 用法：
 //   node src/snapshot-cli.js [agentId] [lang]            # 默认打印 inject_prompt（可直接贴进 prompt）
@@ -13,8 +13,7 @@
 //
 // 无状态时自动 init（默认随机 baseline），保证首轮也有身份态可注入。
 import { callBridge } from "./engine_client.js";
-import { toneProfile } from "./tone.js";
-import { formatSnapshotPrompt } from "./runtime_contract.js";
+import { buildSnapshot } from "./snapshot.js";
 
 const args = process.argv.slice(2);
 const agentId = args[0] && !args[0].startsWith("--") ? args[0] : (process.env.STEMEM_AGENT_ID || "default");
@@ -23,20 +22,13 @@ const mode = args.find((a) => a === "--json" || a === "--hook") || "text";
 const lang = langArg === "zh" ? "zh" : "en";
 
 async function main() {
-  let d = await callBridge("status", {}, agentId).catch(() => null);
-  if (!d || !d.ok) {
+  let result = await buildSnapshot(agentId, lang);
+  // 状态未初始化：自动 init（保证首轮也有身份态可注入）。CLI 不注入 onboarding 首跑提示
+  // —— 那是 MCP server 的职责，避免 hook 场景下重复提示。
+  if (!result || !result.ok) {
     await callBridge("init", {}, agentId);
-    d = await callBridge("status", {}, agentId);
+    result = await buildSnapshot(agentId, lang);
   }
-  const result = {
-    ocean: d.ocean,
-    top_emotion: d.top_emotion,
-    active_emotions: d.active_emotions,
-    personality: d.personality,
-    drive: d.drive,
-    tone: toneProfile(d, lang),
-    inject_prompt: formatSnapshotPrompt(d, lang),
-  };
 
   if (mode === "--json") {
     process.stdout.write(JSON.stringify(result, null, 2) + "\n");

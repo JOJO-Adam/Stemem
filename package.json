@@ -18,7 +18,7 @@
     "demo": "node examples/quickstart.mjs",
     "demo:decay": "node examples/emotion-decay-demo.mjs",
     "demo:onboarding": "node examples/onboarding.mjs",
-    "test": "node test/smoke.test.js && node test/integration.test.js && node test/engine.selftest.js"
+    "test": "node test/smoke.test.js && node test/integration.test.js && node test/engine.selftest.js && node test/decay.test.js"
   },
   "engines": {
     "node": ">=18"

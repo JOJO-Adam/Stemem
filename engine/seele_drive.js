@@ -79,9 +79,34 @@ class SeeleDriveSystem {
     });
     this.emotions = [];                 // P1 派生，setEmotions 注入，只读
     this._listeners = { tick: [], satisfy: [], train: [] };
+    // 权重/效用惰性重算：mutator 只置脏标记，reader 读取前才重算（避免 tick/satisfy/train 每次全量重算）
+    this._weightsDirty = false;
+    this._utilsDirty = false;
     this.updateEffectiveWeights();
     this.updateUtilities();
   }
+
+  // ---------- 惰性重算（dirty 标记） ----------
+  // 任一会改变 profile/驱力满足度的操作都调用 markDirty()，而非立即重算；
+  // 真正需要权重/效用的 reader 在 _ensureFresh() 里按需重算一次。行为与原「每次全重算」完全一致。
+  markDirty() {
+    this._weightsDirty = true;
+    this._utilsDirty = true;
+  }
+
+  _ensureFresh() {
+    if (this._weightsDirty) {
+      this.updateEffectiveWeights();
+      this._weightsDirty = false;
+    }
+    if (this._utilsDirty) {
+      this.updateUtilities();
+      this._utilsDirty = false;
+    }
+  }
+
+  // 公开入口（seele_bridge snapshot 直接读 drive.drives[x].utility，需先确保新鲜）
+  ensureFresh() { this._ensureFresh(); }
 
   // ---------- 驱力单一真源 API（SPECS-game/07 §1.3，消费方只调这些） ----------
 
@@ -92,8 +117,7 @@ class SeeleDriveSystem {
       this.profile[d] = clamp(this.profile[d] + delta, 0, 100);
     });
     this._normalizeProfile();
-    this.updateEffectiveWeights();
-    this.updateUtilities();
+    this.markDirty();
     this._emit('train', { profile: this.getProfile() });
   }
 
@@ -163,8 +187,7 @@ class SeeleDriveSystem {
   // 同步最新人格（来自 P1 引擎演化后的 ocean）→ 驱动层用最新值才叫"人格影响想要什么"。
   setOcean(ocean) {
     this.ocean = Object.assign({}, DEFAULT_OCEAN, ocean || {});
-    this.updateEffectiveWeights();
-    this.updateUtilities();
+    this.markDirty();
   }
 
   updateUrgency(drive) {
@@ -194,6 +217,7 @@ class SeeleDriveSystem {
   }
 
   getDominantDrive() {
+    this._ensureFresh();
     let dominant = DRIVES[0];
     let max = -1;
     DRIVES.forEach(drive => {
@@ -203,6 +227,7 @@ class SeeleDriveSystem {
   }
 
   getDriveRanking() {
+    this._ensureFresh();
     return [...DRIVES].sort((a, b) => this.drives[b].utility - this.drives[a].utility);
   }
 
@@ -216,8 +241,7 @@ class SeeleDriveSystem {
       this.updateUrgency(drive);
       d.cumulative_satisfaction = d.cumulative_satisfaction * 0.99 + d.satisfaction * 0.01;
     });
-    this.updateEffectiveWeights();
-    this.updateUtilities();
+    this.markDirty();
     this._emit('tick', { dt });
   }
 
@@ -233,8 +257,7 @@ class SeeleDriveSystem {
       this._normalizeProfile();
     }
     this.updateUrgency(drive);
-    this.updateEffectiveWeights();
-    this.updateUtilities();
+    this.markDirty();
     this._emit('satisfy', { drive, amount });
   }
 

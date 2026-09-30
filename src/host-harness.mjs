@@ -4,7 +4,15 @@
 // 这是「用户装上 Stemem 能否感知到」的临门一脚：MCP 连通只给了 9 个工具，
 // 但没有任何东西每轮自动把人格态注回去 —— 宿主不调 snapshot，人格层就休眠。
 //
-// 本 harness 把"强制注入 loop"做成一个可复用的宿主侧包裹：
+// 分工（与 src/snapshot-cli.js 的重叠已统一）：
+//   - src/snapshot-cli.js ＝ 一次性 CLI，专为宿主 hook（如 Claude Code UserPromptSubmit）设计，
+//     单进程拉起即出 inject_prompt，不维持长连接。
+//   - 本 harness ＝ 给需要「长连接 + 跨轮 event/tick」的活体 agent loop 用：spawn 起一个常驻
+//     MCP server、preTurn() 调 snapshot 工具、postTurn() 回写 event。它拿到的 snapshot 与 CLI
+//     完全一致 —— 因为 server 的 snapshot 工具与 CLI 共用 src/snapshot.js 的 buildSnapshot 单一真源。
+//   两者不再各自拼装 snapshot 对象，不会漂移。
+//
+// 用法：
 //   preTurn()  → 调 snapshot，返回可直接拼进 system prompt 的 inject_prompt
 //   postTurn() → 把这一轮对话回写成一个 event，驱动人格演化
 // 宿主只需在自己的 agent loop 里：systemPrompt = stememInject + baseSystemPrompt。
